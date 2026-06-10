@@ -108,7 +108,6 @@ const Driver: React.FC = () => {
         setFormLoading(false);
     };
 
-    // Qo'shish yoki yangilash
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormLoading(true);

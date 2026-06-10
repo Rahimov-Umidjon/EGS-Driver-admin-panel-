@@ -12,5 +12,17 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
-  }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router"],
+          mui: ["@mui/material", "@mui/icons-material"],
+          headlessui: ["@headlessui/react"],
+          pusher: ["pusher-js"],
+        },
+      },
+    },
+  },
 })

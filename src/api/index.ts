@@ -3,7 +3,7 @@ import type { DriverDetails, DriverLocation } from "../interface";
 
 export class TruckAPI {
   private token: string;
-  private baseUrl = "https://mobile.izisol.uz/api";
+  private baseUrl = "https://mobile-test.izisol.uz/api";
 
   constructor(token: string) {
     this.token = token;
