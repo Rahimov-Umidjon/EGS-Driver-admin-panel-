@@ -21,6 +21,8 @@ const Prices = lazy(() => import("./pages/prices"));
 const RusQueue = lazy(() => import("./pages/rusQueue"));
 const RusKazInsurance = lazy(() => import("./pages/rusInsurance")); 
 const Guarantees = lazy(() => import("./pages/guarantee")); 
+const Admins = lazy(() => import("./pages/admins")); 
+const Roles = lazy(() => import("./pages/roles")); 
 const ProtectedRoute = () => {
     const { isAuthenticated } = useAuth();
     return isAuthenticated ? <Layout /> : <Navigate to="/login" replace />;
@@ -70,6 +72,8 @@ const App = () => {
                             </Chats>} /> 
                         <Route path="/files" element={<Files />} />
                         <Route path="/drivers" element={<Drivers />} />
+                        <Route path="/admins" element={<Admins />} />
+                        <Route path="/roles" element={<Roles />} />
                         <Route path="/passports" element={<Passports />} />
                         <Route path="/passport" element={<Passport />} />
                         <Route path="/kazepi/:status" element={<KazEPIFailed />} />
