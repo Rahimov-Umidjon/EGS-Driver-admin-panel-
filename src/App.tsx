@@ -15,6 +15,7 @@ const Layout = lazy(() => import("./layout"));
 const NewMap = lazy(() => import("./pages/newMap"));
 const ChatsId = lazy(() => import("./pages/chatId"));
 const VerificationQueue = lazy(() => import("./pages/queues"));  
+const BakatQazAvtoJol = lazy(() => import("./pages/bakatQazAvtoJol"));  
 const KazEPIFailed = lazy(() => import("./pages/kazepi/kazEPIFailed.tsx"));  
 const UzEPI = lazy(() => import("./pages/uzEPI/index.tsx"));  
 const Prices = lazy(() => import("./pages/prices"));
@@ -80,6 +81,7 @@ const App = () => {
                         <Route path="/uzepi/:status" element={<UzEPI />} />
                         <Route path="/prices" element={<Prices />} />
                         <Route path="/queue/:status" element={<VerificationQueue />} /> 
+                        <Route path="/bakat-qaz-avto-jol/:status" element={<BakatQazAvtoJol />} /> 
                         <Route path="/rus-queue/:status" element={<RusQueue />} /> 
                         <Route path="/rus-kaz-insurance/:status" element={<RusKazInsurance />} />  
                         <Route path="/guarantees/:status" element={<Guarantees />} />  

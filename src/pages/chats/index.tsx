@@ -160,7 +160,7 @@ function Index({ children }: { children: ReactNode }) {
                     />
                 </div>
 
-                <div className=" overflow-y-auto">
+                <div className="  overflow-y-auto scrollbar scrollbar-thumb-gray-400 scrollbar-thin scrollbar-track-gray-100  font-sans">
                     {chats &&
                         chats?.map((chat: Conversation) => (
                             <UserItem key={chat.id + chat?.driver_id}

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
     SlidersHorizontal,
     RotateCcw,
+    X,
 } from "lucide-react";
 import api from "../../api/api.ts";
 import QueueTable from "../../components/queueTable";
@@ -67,6 +68,9 @@ type SelectedImages = {
     polis: ImageItem[];
     cmr: ImageItem[];
     payment_check: ImageItem[];
+    passport?: ImageItem[];
+    driving_license?: ImageItem[];
+    tex_passport?: ImageItem[];
 };
 
 
@@ -80,18 +84,22 @@ export default function VerificationQueue() {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedImages, setSelectedImages] =
         useState<SelectedImages | undefined>(undefined);
-    const { status } = useParams(); 
+    const { status } = useParams();
+    const [search, setSearch] = useState("");
 
     console.log("STATUS:", status);
 
     const handleOpenDocs = (item: BorderQueue) => {
 
         setSelectedImages({
-            polis: item.files.filter((obj) => obj.type === 'polis'),   
-            cmr: item.files.filter((obj) => obj.type === 'cmr'),    
-            payment_check: item.files.filter((obj) => obj.type === 'payment_check'),   
+            polis: item.files.filter((obj) => obj.type === 'polis'),
+            cmr: item.files.filter((obj) => obj.type === 'cmr'),
+            payment_check: item.files.filter((obj) => obj.type === 'payment_check'),
+            passport: item.driver.document?.filter((obj) => obj.type === 'passport') ?? [],
+            driving_license: item.driver.document?.filter((obj) => obj.type === 'driving_license') ?? [],
+            tex_passport: item.driver.document?.filter((obj) => obj.type === 'tex_passport') ?? [],
         });
- 
+
         setModalOpen(true);
     };
 
@@ -101,13 +109,14 @@ export default function VerificationQueue() {
         setTimeout(() => setSyncing(false), 1800);
     };
 
-    const getQueue = async (page: number) => {
+    const getQueue = async (page: number, searchValue = search) => {
         try {
             setLoading(true);
             const res = await api.get(`/admin/queue${status === 'pending' ? '' : status === 'success' ? '/approved-history' : '/rejected-history'}`, {
                 params: {
                     page,
                     // per_page: 10, // har sahifada nechta ko'rsatilsin
+                    search: searchValue,
                 }
             });
 
@@ -131,6 +140,7 @@ export default function VerificationQueue() {
     };
 
 
+    console.log(selectedImages)
 
     const getStatistics = async () => {
 
@@ -152,23 +162,56 @@ export default function VerificationQueue() {
     }, [status]);
 
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setCurrentPage(1);
+            getQueue(1, search);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [search]);
+
+
     return (
-        <div className="min-h-screen bg-[#f0f4f3] p-8 font-sans">
+        <div className="min-h-screen overflow-y-auto scrollbar scrollbar-thumb-gray-400 scrollbar-thin scrollbar-track-gray-100 bg-[#f0f4f3] p-8 font-sans">
             <div className="mx-auto">
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-7">
-                  
-                        <h1 className="text-[22px] font-bold text-gray-900 leading-tight">
-                            Qozo'g'iston elektron navbati
-                        </h1>
-                  
+
+                    <h1 className="text-[22px] font-bold text-gray-900 leading-tight">
+                        Qozo'g'iston elektron navbati
+                    </h1>
+
                     <div className="flex items-center gap-2.5">
-                        <button
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                            <SlidersHorizontal size={14} />
-                            Ma'lumotlarni saralash
-                        </button>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Haydovchi qidirish..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-96 pl-4 pr-10 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+
+                            {search ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSearch("");
+                                        setCurrentPage(1);
+                                        getQueue(1, "");
+                                    }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                    <X size={24} />
+                                </button>
+                            ) : (
+                                <SlidersHorizontal
+                                    size={16}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                />
+                            )}
+                        </div>
                         <motion.button
                             onClick={handleSync}
                             whileTap={{ scale: 0.97 }}
@@ -227,7 +270,7 @@ export default function VerificationQueue() {
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
-                imgType={['polis', 'cmr', 'payment_check']}
+                imgType={['polis', 'cmr', 'payment_check', 'passport', 'tex_passport', 'driving_license']}
             />
 
 

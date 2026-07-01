@@ -1,3 +1,5 @@
+import { ImageItem } from "../pages/queues";
+
 export interface DriverLocation {
     driver_id: number;
     number: string;
@@ -39,6 +41,9 @@ export interface DriverDetails {
 type Status = 'pending' | 'pending_review' | 'waiting_payment' | 'payment_uploaded' | 'approved' | 'rejected';
 
 
+
+
+
 export interface BorderQueue {
     id: number;
     driver_id: number;
@@ -52,15 +57,35 @@ export interface BorderQueue {
     created_at: string;
     updated_at: string;
     driver: Driver;
-    files:File[]
+    files: File[]
     duration?: number;
     insurance_type?: 'unlimited' | 'limited';
     country?: string;
+    type?: string;
+    documents?: ImageItem[];
+    
+    
 }
 
-interface Driver {
+export interface DriverDocument {
     id: number;
-    is_verified: string;
+    driver_id: number;
+    name: string;
+    path: string;
+    file_type: string;
+    extension: string;
+    mime_type: string;
+    status: 'approved' | 'rejected' | 'pending';
+    comment: string | null;
+    reviewed_by: number | null;
+    reviewed_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Driver {
+    id: number;
+    is_verified: 'pending' | 'completed' | 'inprogress' | 'rejected'
     in_egs: number;
     phone_number: string;
     telegram_chat_id: string;
@@ -75,6 +100,9 @@ interface Driver {
     deleted_at: string | null;
     is_online: number;
     fcm_token: string;
+    document?: ImageItem[];
+    documents?: ImageItem[];
+    external_id?:string
 }
 
 
@@ -88,4 +116,3 @@ export interface File {
     updated_at: string; // yoki Date
 }
 
- 

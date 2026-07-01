@@ -43,6 +43,8 @@ function Index() {
 
     const userRef = useRef(user);
 
+    console.log(userRef)
+
 
     // Barcha handlerlarni useCallback bilan o'rang
     const handleMessageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +96,7 @@ function Index() {
             id: Date.now(),
             message: message ?? null,
             type: 'image',
-            sender_id: userRef.current?.id,
+            sender_id: userRef.current?.admin?.id,
             sender_type: "App\\Models\\Driver",
             is_read: -1,
             file_url: image ? URL.createObjectURL(image) : null,
@@ -158,7 +160,7 @@ function Index() {
 
 
                 // console.log('support.message.sent', data)
-                if(String(data.sender_id) !== String(userRef.current?.id)){
+                if(String(data.sender_id) !== String(userRef.current?.admin?.id)){
                     setMessages((prev) => [...prev, data])
                 }
 
@@ -222,7 +224,7 @@ function Index() {
             id: Date.now(),
             message: message ?? null,
             type: type,
-            sender_id: user?.id,
+            sender_id: user?.admin?.id,
             sender_type: "App\\Models\\Driver",
             is_read: -1,
             file_url: image ? URL.createObjectURL(image) : null,
@@ -231,8 +233,7 @@ function Index() {
             created_at: new Date().toISOString()
         }
 
-
-        setMessages((prev) => [...prev, obj])
+        setMessages((prev) => [...prev, obj])    
         setShowMap(false)
 
         try {
@@ -241,6 +242,8 @@ function Index() {
                     'Content-Type': 'multipart/form-data',
                 },
             })
+
+            console.log(messages)
 
             setMessages((prev) =>
                 prev.map((msg) =>
@@ -293,7 +296,7 @@ function Index() {
 
 
     function Message({data}: { data: Messages }) {
-        const isSender = data?.sender_id === user?.id
+        const isSender = data?.sender_id === user?.admin?.id
         return (
             <div className={`flex ${isSender ? "justify-end" : "justify-start"}`}>
                 <div

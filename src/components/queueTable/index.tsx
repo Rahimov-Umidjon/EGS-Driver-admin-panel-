@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, RefreshCw, XCircle } from "lucide-react";
+import { Check, CheckCircle2, Clock, RefreshCw, XCircle } from "lucide-react";
 import { ChangeEvent, Dispatch, ReactNode, SetStateAction, useState } from "react";
 
 import Paper from '@mui/material/Paper';
@@ -11,7 +11,7 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import FolderIcon from '@mui/icons-material/Folder';
-import { Button } from "@mui/material";
+import { Button, TextField } from "@mui/material";
 import api from "../../api/api.ts";
 import RejectModal from "../RejectModal";
 import { toast } from "react-toastify";
@@ -36,7 +36,7 @@ interface PaginationMeta {
 
 
 interface Column {
-    id: 'id' | 'driver' | 'documents' | 'status' | 'border_name' | 'date' | 'cmr' | 'action' | 'duration' | 'insurance_type' | 'country';
+    id: 'id' | 'driver' | 'documents' | 'status' | 'border_name' | 'date' | 'cmr' | 'action' | 'duration' | 'insurance_type' | 'country' | 'bakat_kazavtajuli_type' | 'authorize_payment' | 'external_id' | 'time';
     label: string;
     minWidth?: number;
     align?: 'left';
@@ -151,7 +151,7 @@ interface QueueTableProps {
     currentPage: number;
     handleOpenDocs: (item: BorderQueue) => void;
     refetch: () => void;
-    type: 'queue' | 'payment' | 'kazepi' | 'uzepi' | 'russia-queue' | 'insurance' | 'guarantee';
+    type: 'queue' | 'kazepi' | 'uzepi' | 'russia-queue' | 'insurance' | 'guarantee' | 'bakat-kazavtajuli';
 }
 
 
@@ -167,11 +167,12 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [rejectModal, setRejectModal] = useState<{
         open: boolean;
-        type: "queue" | "payment" | "kazepi" | "uzepi" | "russia-queue" | "guarantee" | "insurance" | null;
+        type: "queue" | "payment" | "kazepi" | "uzepi" | "russia-queue" | "guarantee" | "insurance" | 'bakat-kazavtajuli' | null;
     }>({ open: false, type: null });
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [comment, setComment] = useState<string>("");
+    const [externalId, setExternalId] = useState<string>("");
     const navigate = useNavigate();
 
     const [confirmModal, setConfirmModal] = useState<{
@@ -299,16 +300,62 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
         }
     }
 
+    const handleConfirmExternalId = async (id: number, external_id: string) => {
+        try {
+            const res = await api.post(`/admin/add-queue-service-id`, {
+                driver_id: id,
+                external_id
+            })
+            console.log(res)
+            toast.success("ID tasdiqlandi");
+            setExternalId('')
+            refetch()
+        } catch (e: unknown) {
+            if (axios.isAxiosError(e)) {
+                toast.error(e?.response?.data.message || "Ma'lumotlarni olishda xatolik");
+            } else {
+                toast.error("Ma'lumotlarni olishda xatolik");
+            }
+        }
+    }
 
 
 
-    const columnsConfig: Record<'queue' | 'payment' | 'kazepi' | 'uzepi' | 'russia_queue' | 'insurance' | 'guarantee', Column[]> = {
+
+
+    const columnsConfig: Record<'queue' | 'kazepi' | 'uzepi' | 'russia_queue' | 'insurance' | 'guarantee' | 'bakat_kazavtajuli', Column[]> = {
         queue: [
             {
                 id: "id",
                 label: "ID",
                 minWidth: 100,
                 render: (row: BorderQueue) => row.id,
+            },
+            {
+                id: "external_id",
+                label: "Tashqi ID",
+                minWidth: 60,
+                render: (row: BorderQueue) => (
+                    <div className={'flex items-center gap-2 min-w-[150px] '}>
+                        <TextField
+                            
+                            variant="standard"
+                            label="Tashqi ID"
+                            value={row?.driver?.external_id}
+                            onChange={(e) => setExternalId(e.target.value)}
+
+                        />
+                        <Button
+                            sx={{
+                                height: 30
+                            }}
+                            variant="contained" color="success" size="small"
+                            onClick={() => handleConfirmExternalId(row?.driver?.id, externalId)}
+                        >
+                            <Check />
+                        </Button>
+                    </div>
+                ),
             },
 
             {
@@ -352,9 +399,10 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleConfirmPolis(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                                 <Button
+                                    className={"whitespace-nowrap"}
                                     variant="contained" color="error" size="small"
                                     onClick={() => openConfirm({
                                         title: "Hujjatni bekor qilish",
@@ -364,7 +412,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleRejectedPolis(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Cancel
+                                    Bekor qilish
                                 </Button>
                             </div>
                         )}
@@ -402,6 +450,17 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
             },
 
             {
+                id: "time",
+                label: "Vaqt oralig'i",
+                minWidth: 180,
+                render: (row: BorderQueue) => (
+                    <p className="text-[13.5px] font-medium text-gray-800">
+                        {row?.time_from?.slice(0, 5) + " - " + row?.time_to?.slice(0, 5)}
+                    </p>
+                ),
+            },
+
+            {
                 id: "cmr",
                 label: "CMR",
                 minWidth: 200,
@@ -426,9 +485,10 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleConfirmPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                                 <Button
+                                    className={"whitespace-nowrap"}
                                     variant="contained" color="error" size="small"
                                     onClick={() => openConfirm({
                                         title: "To'lovni rad etish",
@@ -438,7 +498,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleRejectedPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Cancel
+                                    Bekor qilish
                                 </Button>
                             </div>
                         )}
@@ -469,10 +529,11 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 setIsOpen(true);
                             }}
                         >
-                            Confirm
+                            Tasdiqlash
                         </Button>
 
                         <Button
+                            className={"whitespace-nowrap"}
                             variant="contained"
                             color="error"
                             size="small"
@@ -484,7 +545,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 });
                             }}
                         >
-                            Cancel
+                            Bekor qilish
                         </Button>
 
                         <Button
@@ -547,9 +608,10 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleConfirmPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                                 <Button
+                                    className={"whitespace-nowrap"}
                                     variant="contained" color="error" size="small"
                                     onClick={() => openConfirm({
                                         title: "To'lovni rad etish",
@@ -559,7 +621,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleRejectedPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Cancel
+                                    Bekor qilish
                                 </Button>
                             </div>
                         )}
@@ -614,10 +676,11 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 setIsOpen(true);
                             }}
                         >
-                            Confirm
+                            Tasdiqlash
                         </Button>
 
                         <Button
+                            className={"whitespace-nowrap"}
                             variant="contained"
                             color="error"
                             size="small"
@@ -629,7 +692,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 });
                             }}
                         >
-                            Cancel
+                            Bekor qilish
                         </Button>
 
                         <Button
@@ -692,9 +755,10 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleConfirmPolis(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                                 <Button
+                                    className={"whitespace-nowrap"}
                                     variant="contained" color="error" size="small"
                                     onClick={() => openConfirm({
                                         title: "Hujjatni bekor qilish",
@@ -704,7 +768,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleRejectedPolis(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Cancel
+                                    Bekor qilish
                                 </Button>
                             </div>
                         )}
@@ -766,9 +830,10 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleConfirmPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                                 <Button
+                                    className={"whitespace-nowrap"}
                                     variant="contained" color="error" size="small"
                                     onClick={() => openConfirm({
                                         title: "To'lovni rad etish",
@@ -778,7 +843,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleRejectedPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Cancel
+                                    Bekor qilish
                                 </Button>
                             </div>
                         )}
@@ -809,10 +874,11 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 setIsOpen(true);
                             }}
                         >
-                            Confirm
+                            Tasdiqlash
                         </Button>
 
                         <Button
+                            className={"whitespace-nowrap"}
                             variant="contained"
                             color="error"
                             size="small"
@@ -824,7 +890,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 });
                             }}
                         >
-                            Cancel
+                            Bekor qilish
                         </Button>
 
                         <Button
@@ -887,9 +953,10 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleConfirmPolis(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                                 <Button
+                                    className={"whitespace-nowrap"}
                                     variant="contained" color="error" size="small"
                                     onClick={() => openConfirm({
                                         title: "Hujjatni bekor qilish",
@@ -899,7 +966,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleRejectedPolis(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Cancel
+                                    Bekor qilish
                                 </Button>
                             </div>
                         )}
@@ -952,9 +1019,10 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleConfirmPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                                 <Button
+                                    className={"whitespace-nowrap"}
                                     variant="contained" color="error" size="small"
                                     onClick={() => openConfirm({
                                         title: "To'lovni rad etish",
@@ -964,7 +1032,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleRejectedPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Cancel
+                                    Bekor qilish
                                 </Button>
                             </div>
                         )}
@@ -1000,10 +1068,11 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 setIsOpen(true);
                             }}
                         >
-                            Confirm
+                            Tasdiqlash
                         </Button>
 
                         <Button
+                            className={"whitespace-nowrap"}
                             variant="contained"
                             color="error"
                             size="small"
@@ -1015,7 +1084,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 });
                             }}
                         >
-                            Cancel
+                            Bekor qilish
                         </Button>
 
                         <Button
@@ -1090,9 +1159,10 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleConfirmPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                                 <Button
+                                    className={"whitespace-nowrap"}
                                     variant="contained" color="error" size="small"
                                     onClick={() => openConfirm({
                                         title: "To'lovni rad etish",
@@ -1102,7 +1172,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleRejectedPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Cancel
+                                    Bekor qilish
                                 </Button>
                             </div>
                         )}
@@ -1184,10 +1254,11 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 setIsOpen(true);
                             }}
                         >
-                            Confirm
+                            Tasdiqlash
                         </Button>
 
                         <Button
+                            className={"whitespace-nowrap"}
                             variant="contained"
                             color="error"
                             size="small"
@@ -1199,7 +1270,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 });
                             }}
                         >
-                            Cancel
+                            Bekor qilish
                         </Button>
 
                         <Button
@@ -1262,9 +1333,10 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleConfirmPolis(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                                 <Button
+                                    className={"whitespace-nowrap"}
                                     variant="contained" color="error" size="small"
                                     onClick={() => openConfirm({
                                         title: "Hujjatni bekor qilish",
@@ -1274,7 +1346,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleRejectedPolis(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Cancel
+                                    Bekor qilish
                                 </Button>
                             </div>
                         )}
@@ -1336,9 +1408,10 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleConfirmPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                                 <Button
+                                    className={"whitespace-nowrap"}
                                     variant="contained" color="error" size="small"
                                     onClick={() => openConfirm({
                                         title: "To'lovni rad etish",
@@ -1348,7 +1421,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                         onConfirm: () => { handleRejectedPayment(row.id); closeConfirm(); },
                                     })}
                                 >
-                                    Cancel
+                                    Bekor qilish
                                 </Button>
                             </div>
                         )}
@@ -1379,10 +1452,11 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 setIsOpen(true);
                             }}
                         >
-                            Confirm
+                            Tasdiqlash
                         </Button>
 
                         <Button
+                            className={"whitespace-nowrap"}
                             variant="contained"
                             color="error"
                             size="small"
@@ -1394,7 +1468,214 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                                 });
                             }}
                         >
-                            Cancel
+                            Bekor qilish
+                        </Button>
+
+                        <Button
+                            variant="outlined"
+                            color="info"
+                            onClick={() => navigate(`/chats/${row?.driver?.id}`)}
+                        >
+                            <EmailIcon />
+                        </Button>
+                    </div>
+                ),
+            },
+        ],
+        bakat_kazavtajuli: [
+            {
+                id: "id",
+                label: "ID",
+                minWidth: 100,
+                render: (row: BorderQueue) => row.id,
+            },
+
+            {
+                id: "bakat_kazavtajuli_type",
+                label: "Xizmat turi",
+                minWidth: 250,
+                render: (row: BorderQueue) => (
+
+                    <span className="text-[13.5px] font-semibold text-gray-900">
+                        {row?.type}
+                    </span>
+                ),
+            },
+
+            {
+                id: "driver",
+                label: "Haydovchi malumotlari",
+                minWidth: 250,
+                render: (row: BorderQueue) => (
+                    <div>
+                        <p className="text-[13.5px] font-semibold text-gray-900">
+                            {row?.driver?.fio}
+                        </p>
+                        <p className="text-[11.5px] text-gray-400 mt-0.5">
+                            {row?.driver?.phone_number}
+                        </p>
+                    </div>
+                ),
+            },
+
+            {
+                id: "authorize_payment",
+                label: "To'lovga ruxsat berish",
+                minWidth: 200,
+                render: (row: BorderQueue) => (
+                    <div className={'flex items-center gap-x-2'}>
+
+                        {/* pending_review uchun */}
+                        {row.status === 'pending_review' ? (
+                            <div className="flex flex-col gap-y-2">
+                                <Button
+                                    variant="contained" color="success" size="small"
+                                    onClick={() => openConfirm({
+                                        title: "Hujjatni tasdiqlash",
+                                        description: "Haqiqatdan ham ushbu hujjatni tasdiqlaysizmi?",
+                                        confirmColor: "success",
+                                        confirmLabel: "Tasdiqlash",
+                                        onConfirm: () => { handleConfirmPolis(row.id); closeConfirm(); },
+                                    })}
+                                >
+                                    Tasdiqlash
+                                </Button>
+                                <Button
+                                    className={"whitespace-nowrap"}
+                                    variant="contained" color="error" size="small"
+                                    onClick={() => openConfirm({
+                                        title: "Hujjatni bekor qilish",
+                                        description: "Haqiqatdan ham ushbu hujjatni bekor qilasizmi?",
+                                        confirmColor: "error",
+                                        confirmLabel: "Bekor qilish",
+                                        onConfirm: () => { handleRejectedPolis(row.id); closeConfirm(); },
+                                    })}
+                                >
+                                    Bekor qilish
+                                </Button>
+                            </div>
+                        )
+
+                            :
+                            'N/A'
+                        }
+                    </div>
+
+                ),
+            },
+
+
+            {
+                id: "status",
+                label: "To'lov holati",
+                minWidth: 180,
+                render: (row: BorderQueue) => {
+                    const cfg = statusConfig[row.status];
+
+                    return (
+                        <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold ${cfg?.classes}`}
+                        >
+                            {cfg?.icon}
+                            {cfg?.label}
+                        </span>
+                    );
+                },
+            },
+            {
+                id: "documents",
+                label: "Hujjatlar",
+                minWidth: 200,
+                render: (row: BorderQueue) => (
+                    <div className={'flex items-center gap-x-2'}>
+                        <Button onClick={() => handleOpenDocs(row)} variant={'outlined'} color={'info'}
+                            className={'py-1 px-2 border w-max cursor-pointer'}>
+                            <FolderIcon color={'info'} />
+                            <p className={'ml-2'}>{row?.files.filter((obj) => obj.type === 'payment_check').length}</p>
+                        </Button>
+
+                        {/* payment_uploaded uchun */}
+                        {row.status === 'payment_uploaded' && (
+                            <div className="flex flex-col gap-y-2">
+                                <Button
+                                    variant="contained" color="success" size="small"
+                                    onClick={() => openConfirm({
+                                        title: "To'lovni tasdiqlash",
+                                        description: "Haqiqatdan ham ushbu to'lovni tasdiqlaysizmi?",
+                                        confirmColor: "success",
+                                        confirmLabel: "Tasdiqlash",
+                                        onConfirm: () => { handleConfirmPayment(row.id); closeConfirm(); },
+                                    })}
+                                >
+                                    Tasdiqlash
+                                </Button>
+                                <Button
+                                    className={"whitespace-nowrap"}
+                                    variant="contained" color="error" size="small"
+                                    onClick={() => openConfirm({
+                                        title: "To'lovni rad etish",
+                                        description: "Haqiqatdan ham ushbu to'lovni rad etasizmi?",
+                                        confirmColor: "error",
+                                        confirmLabel: "Rad etish",
+                                        onConfirm: () => { handleRejectedPayment(row.id); closeConfirm(); },
+                                    })}
+                                >
+                                    Bekor qilish
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
+                ),
+            },
+
+
+
+            {
+                id: "date",
+                label: "Vaqt",
+                minWidth: 170,
+                render: (row: BorderQueue) =>
+                    new Date(row.created_at).toLocaleString("uz-UZ", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                    })
+
+            },
+
+            {
+                id: "action",
+                label: "Amallar",
+                minWidth: 250,
+                render: (row: BorderQueue) => (
+                    <div className="flex gap-x-2 items-center">
+                        <Button
+                            variant="contained"
+                            color="success"
+                            size="small"
+                            onClick={() => {
+                                setSelectedId(row.id);
+                                setIsOpen(true);
+                            }}
+                        >
+                            Tasdiqlash
+                        </Button>
+
+                        <Button
+                            className={"whitespace-nowrap"}
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            onClick={() => {
+                                setSelectedId(row.id);
+                                setRejectModal({
+                                    open: true,
+                                    type,
+                                });
+                            }}
+                        >
+                            Bekor qilish
                         </Button>
 
                         <Button
@@ -1421,16 +1702,16 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.28, duration: 0.4 }}
-            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            className="bg-white rounded-2xl shadow-sm overflow-hidden "
         >
 
 
             <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-                <TableContainer>
+                <TableContainer className={"overflow-y-auto scrollbar scrollbar-thumb-gray-400 scrollbar-thin scrollbar-track-gray-100"}>
                     <Table stickyHeader aria-label="sticky table">
                         <TableHead>
                             <TableRow>
-                                {columnsConfig[type === 'russia-queue' ? 'russia_queue' : type]?.map((column, index) => (
+                                {columnsConfig[type === 'russia-queue' ? 'russia_queue' : type === 'bakat-kazavtajuli' ? 'bakat_kazavtajuli' : type]?.map((column, index) => (
                                     <TableCell
                                         key={index + "_" + column.label}
                                     >
@@ -1443,7 +1724,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                             {data && data.map((item) => (
 
                                 <TableRow key={item.id}>
-                                    {columnsConfig[type === 'russia-queue' ? 'russia_queue' : type]?.map((column) => (
+                                    {columnsConfig[type === 'russia-queue' ? 'russia_queue' : type === 'bakat-kazavtajuli' ? 'bakat_kazavtajuli' : type]?.map((column) => (
                                         <TableCell key={column.id} align={column.align}>
                                             {column.render
                                                 ? column.render(item)

@@ -66,6 +66,9 @@ type SelectedImages = {
     polis: ImageItem[];
     cmr: ImageItem[];
     payment_check: ImageItem[];
+    passport?: ImageItem[];
+    driving_license?: ImageItem[];
+    tex_passport?: ImageItem[];
 };
 
 
@@ -89,6 +92,9 @@ export default function KazInsurance() {
             polis: item.files.filter((obj) => obj.type === 'polis'),   // your API field
             cmr: item.files.filter((obj) => obj.type === 'cmr'),     // your API field
             payment_check: item.files.filter((obj) => obj.type === 'payment_check'),    // your API field
+            passport: item.driver.document?.filter((obj) => obj.type === 'passport') ?? [],
+            driving_license: item.driver.document?.filter((obj) => obj.type === 'driving_license') ?? [],
+            tex_passport: item.driver.document?.filter((obj) => obj.type === 'tex_passport') ?? [],
         });
 
         // console.log({
@@ -236,7 +242,7 @@ export default function KazInsurance() {
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
-                imgType={['polis', 'cmr', 'payment_check']}
+                imgType={['polis', 'cmr', 'payment_check', 'passport', 'tex_passport', 'driving_license']}
             />
 
 

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
     SlidersHorizontal,
     RotateCcw,
+    X,
 } from "lucide-react";
 import api from "../../api/api.ts";
 import QueueTable from "../../components/queueTable";
@@ -11,7 +12,7 @@ import { useParams } from "react-router-dom";
 import { BorderQueue, File } from "../../interface/index.ts";
 
 
-type KazEPIStatistics = "kaz_epi_pending" | "kaz_epi_approved" | "kaz_epi_rejected" | "kaz_epi_waiting_payment" | "kaz_epi_payment_uploaded"
+type KazEPIStatistics = "guarantee_pending" | "guarantee_approved" | "guarantee_rejected" | "guarantee_payment_approved" | "guarantee_payment_uploaded"
 
 
 
@@ -19,13 +20,15 @@ type SelectedImages = {
     invoice: File[];
     packing_list: File[];
     export_declaration: File[];
-
     ct1: File[];
     fito: File[];
     obshiy_forma: File[];
     forma_a: File[];
     cmr: File[];
     payment_check: File[];
+    passport?: File[];
+    driving_license?: File[];
+    tex_passport?: File[];
 };
 
 
@@ -73,6 +76,7 @@ export default function Guarantee() {
     const [selectedImages, setSelectedImages] = useState<SelectedImages | undefined>(undefined);
 
     const { status: statusUrl } = useParams(); // Agar URL parametrlari kerak bo'lsa, shu yerda olish mumkin
+    const [search, setSearch] = useState("");
 
 
 
@@ -99,7 +103,7 @@ export default function Guarantee() {
         setTimeout(() => setSyncing(false), 1800);
     };
 
-    const getGuarantees = async (page: number) => {
+    const getGuarantees = async (page: number , searchValue = search) => {
         try {
             setLoading(true);
             // API ga page va per_page parametrlarini yuborish
@@ -107,6 +111,7 @@ export default function Guarantee() {
                 params: {
                     page,
                     // per_page: 10, // har sahifada nechta ko'rsatilsin
+                    search: searchValue,
                 }
             });
 
@@ -150,9 +155,18 @@ export default function Guarantee() {
     }, []);
 
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setCurrentPage(1);
+            getGuarantees(1, search);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [search]);
+
 
     return (
-        <div className="min-h-screen bg-[#f0f4f3] p-8 font-sans">
+        <div className="min-h-screen overflow-y-auto scrollbar scrollbar-thumb-gray-400 scrollbar-thin scrollbar-track-gray-100 bg-[#f0f4f3] p-8 font-sans">
             <div className="mx-auto">
 
                 {/* Header */}
@@ -161,10 +175,34 @@ export default function Guarantee() {
                         Kafolat
                     </h1>
                     <div className="flex items-center gap-2.5">
-                        <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                            <SlidersHorizontal size={14} />
-                            Ma'lumotllarni saralash 
-                        </button>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Haydovchi qidirish..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-96 pl-4 pr-10 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+
+                            {search ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSearch("");
+                                        setCurrentPage(1);
+                                        getGuarantees(1, "");
+                                    }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                    <X size={24} />
+                                </button>
+                            ) : (
+                                <SlidersHorizontal
+                                    size={16}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                />
+                            )}
+                        </div>
                         <motion.button
                             onClick={handleSync}
                             whileTap={{ scale: 0.97 }}
@@ -176,7 +214,7 @@ export default function Guarantee() {
                             >
                                 <RotateCcw size={14} />
                             </motion.span>
-                            Ma'lumotlarni yangilash 
+                            Ma'lumotlarni yangilash
                         </motion.button>
                     </div>
                 </div>
@@ -223,7 +261,7 @@ export default function Guarantee() {
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
                 type={'guarantee'}
-                imgType={['invoice', 'cmr', 'packing_list', 'export_declaration', 'ct1', 'fito', 'obshiy_forma', 'forma_a', 'payment_check']}
+                imgType={['invoice', 'cmr', 'packing_list', 'export_declaration', 'ct1', 'fito', 'obshiy_forma', 'forma_a', 'payment_check', 'passport', 'tex_passport', 'driving_license']}
             />
 
 

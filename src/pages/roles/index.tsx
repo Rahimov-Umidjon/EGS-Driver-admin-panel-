@@ -8,18 +8,15 @@ import {
     TableContainer,
     TableHead,
     TablePagination,
-    TableRow,
-    IconButton,
+    TableRow, 
     Tooltip,
     CircularProgress,
     Snackbar,
     Alert,
     Button,
-} from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
+} from "@mui/material"; 
 import AddIcon from "@mui/icons-material/Add";
-import { ShieldCheck, Save, Trash2, Pencil, Plus, Key, Check, CheckCircle2, User } from "lucide-react";
+import {  Save, Trash2, Pencil, Plus, Key, Check,  User } from "lucide-react";
 import api from "../../api/api";
 import { toast } from "react-toastify";
 
@@ -361,7 +358,7 @@ function PermissionsModal({ isOpen, role, allPermissions, onClose, onSaved }: {
                         </AnimatePresence>
 
                         {/* Content */}
-                        <div className="overflow-y-auto flex-1 pr-1 space-y-4">
+                        <div className="overflow-y-auto scrollbar scrollbar-thumb-gray-400 pr-4 scrollbar-thin scrollbar-track-gray-100  flex-1 pr-1 space-y-4">
                             {fetchLoading ? (
                                 <div className="flex items-center justify-center py-10">
                                     <CircularProgress size={28} />
@@ -474,7 +471,7 @@ export default function RolesPage() {
         setLoading(true);
         try {
             const res = await api.get("/admin/roles");
-            setRoles(res.data?.roles ?? res.data?.data ?? []);
+            setRoles(res.data?.data ?? res.data?.data ?? []);
         } catch { 
              toast.error("Rollarni yuklashda xatolik");
         } finally {
@@ -521,7 +518,7 @@ export default function RolesPage() {
         if (!roleName.trim()) { setFormError("Rol nomi majburiy"); return; }
         setFormLoading(true);
         try {
-            await api.put(`/admin/roles/${selectedRole!.id}`, { name: roleName.trim() }); 
+            await api.put(`/admin/roles/${selectedRole!.id}`, { name: roleName.trim() , guard_name: 'admin' }); 
             toast.success("Rol muvaffaqiyatli yangilandi");
             setFormOpen(false);
             fetchRoles();
@@ -556,7 +553,7 @@ export default function RolesPage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.4 }}
-                className="min-h-screen bg-[#f0f4f3] p-8 font-sans"
+                className="min-h-screen  overflow-y-auto scrollbar   scrollbar-thumb-gray-400   scrollbar-thin scrollbar-track-gray-100 bg-[#f0f4f3] p-8 font-sans"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">

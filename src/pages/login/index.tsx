@@ -30,10 +30,10 @@ const Login = () => {
       if (!response.ok) {
         throw new Error(data.message || "Login failed");
       }
-
-
+      
       if (data.token && data.admin) {
-        login(data.token , data.user);
+        console.log(data)
+        login(data.token , data);
         navigate("/new-map");
       } else {
         throw new Error("No token received from server");

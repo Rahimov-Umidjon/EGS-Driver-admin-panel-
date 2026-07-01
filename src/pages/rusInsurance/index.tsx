@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
     SlidersHorizontal,
     RotateCcw,
+    X,
 } from "lucide-react";
 import api from "../../api/api.ts";
 import QueueTable from "../../components/queueTable";
@@ -12,11 +13,11 @@ import { BorderQueue } from "../../interface/index.ts";
 
 
 type QueueStatistics =
-    "queue_pending"
-    | "queue_approved"
-    | "queue_rejected"
-    | "queue_waiting_payment"
-    | "queue_payment_uploaded"
+    "insurance_pending"
+    | "insurance_approved"
+    | "insurance_rejected"
+    | "insurance_payment_approved"
+    | "insurance_payment_uploaded"
 
 
 
@@ -64,6 +65,10 @@ export interface ImageItem {
 
 type SelectedImages = {
     payment_check: ImageItem[];
+    insurance_certificate: ImageItem[];
+    passport?: ImageItem[];
+    driving_license?: ImageItem[];
+    tex_passport?: ImageItem[];
 };
 
 
@@ -78,20 +83,20 @@ export default function RusKazInsurance() {
     const [selectedImages, setSelectedImages] =
         useState<SelectedImages | undefined>(undefined);
     const { status } = useParams(); // Agar URL parametrlari kerak bo'lsa, shu yerda olish mumkin
+    const [search, setSearch] = useState("");
 
-    console.log("STATUS:", status);
+    console.log("STATUS:", selectedImages);
 
     const handleOpenDocs = (item: BorderQueue) => {
 
         setSelectedImages({
-            payment_check: item.files.filter((obj) => obj.type === 'payment_check'),    // your API field
+            payment_check: item.files.filter((obj) => obj.type === 'payment_check'),     
+            insurance_certificate: item.files.filter((obj) => obj.type === 'insurance_certificate'),     
+            passport: item.driver.document?.filter((obj) => obj.type === 'passport') ?? [],
+            driving_license: item.driver.document?.filter((obj) => obj.type === 'driving_license') ?? [],
+            tex_passport: item.driver.document?.filter((obj) => obj.type === 'tex_passport') ?? [],
         });
-
-        // console.log({
-        //     polis: item.files.filter((obj) => obj.type === 'polis'),   // your API field
-        //     cmr: item.files.filter((obj) => obj.type === 'cmr'),     // your API field
-        //     chek: item.files.filter((obj) => obj.type === 'payment_check'),    // your API field
-        // });
+ 
         setModalOpen(true);
     };
 
@@ -101,7 +106,7 @@ export default function RusKazInsurance() {
         setTimeout(() => setSyncing(false), 1800);
     };
 
-    const getRusInsurance = async (page: number) => {
+    const getRusInsurance = async (page: number, searchValue = search) => {
         try {
             setLoading(true);
             // API ga page va per_page parametrlarini yuborish
@@ -109,6 +114,7 @@ export default function RusKazInsurance() {
                 params: {
                     page,
                     // per_page: 10, // har sahifada nechta ko'rsatilsin
+                    search: searchValue,
                 }
             });
 
@@ -153,9 +159,18 @@ export default function RusKazInsurance() {
         void getStatistics();
     }, [status]);
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setCurrentPage(1);
+            getRusInsurance(1, search);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [search]);
+
 
     return (
-        <div className="min-h-screen bg-[#f0f4f3] p-8 font-sans">
+        <div className="min-h-screen overflow-y-auto scrollbar scrollbar-thumb-gray-400 scrollbar-thin scrollbar-track-gray-100 bg-[#f0f4f3] p-8 font-sans">
             <div className="mx-auto">
 
                 {/* Header */}
@@ -164,11 +179,34 @@ export default function RusKazInsurance() {
                         Rossiya va Qozog'iston sug'urtasi
                     </h1>
                     <div className="flex items-center gap-2.5">
-                        <button
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                            <SlidersHorizontal size={14} />
-                            Ma'lumotlarni saralash 
-                        </button>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Haydovchi qidirish..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-96 pl-4 pr-10 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+
+                            {search ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSearch("");
+                                        setCurrentPage(1);
+                                        getRusInsurance(1, "");
+                                    }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                    <X size={24} />
+                                </button>
+                            ) : (
+                                <SlidersHorizontal
+                                    size={16}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                />
+                            )}
+                        </div>
                         <motion.button
                             onClick={handleSync}
                             whileTap={{ scale: 0.97 }}
@@ -180,7 +218,7 @@ export default function RusKazInsurance() {
                             >
                                 <RotateCcw size={14} />
                             </motion.span>
-                            Ma'lumotlarni yangilash 
+                            Ma'lumotlarni yangilash
                         </motion.button>
                     </div>
                 </div>
@@ -227,7 +265,7 @@ export default function RusKazInsurance() {
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
-                imgType={['payment_check']}
+                imgType={['payment_check' , 'insurance_certificate', 'passport', 'tex_passport', 'driving_license']}
             />
 
 

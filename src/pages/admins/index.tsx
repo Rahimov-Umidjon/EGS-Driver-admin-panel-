@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ChangeEvent, ReactNode, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Paper,
@@ -15,7 +15,7 @@ import {
     Button,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import { UserPlus, Pencil, Save, Trash2, CheckCircle2 } from "lucide-react";
+import { UserPlus, Pencil, Save, Trash2, CheckCircle2, X, SlidersHorizontal } from "lucide-react";
 import api from "../../api/api";
 import { toast } from "react-toastify";
 
@@ -73,7 +73,6 @@ const statusConfig: Record<string, { label: string; classes: string; icon: React
 };
 
 
-const ROLES = ["superadmin", "admin", "user"];
 
 // ---------- Custom Input ----------
 function Field({
@@ -104,7 +103,7 @@ function Field({
 }
 
 // ---------- Custom Select ----------
-function RoleSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function RoleSelect({ value, onChange, roles = [] }: { value: string; onChange: (v: string) => void, roles: { id: number, name: string }[] }) {
     return (
         <div>
             <label className="text-[12.5px] text-gray-500 block mb-1.5">Rol</label>
@@ -113,9 +112,9 @@ function RoleSelect({ value, onChange }: { value: string; onChange: (v: string) 
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full rounded-xl border border-gray-200 text-[13px] px-3 py-2.5 outline-none focus:border-blue-300 bg-gray-50 capitalize cursor-pointer"
             >
-                {ROLES.map((r) => (
-                    <option key={r} value={r} className="capitalize">
-                        {r}
+                {roles?.map((r) => (
+                    <option key={r.id} value={r.name} className="capitalize">
+                        {r.name}
                     </option>
                 ))}
             </select>
@@ -135,6 +134,7 @@ interface AdminFormModalProps {
     onChange: (field: keyof AdminFormData, value: string) => void;
     onClose: () => void;
     onSubmit: () => void;
+    roles: { id: number, name: string }[]
 }
 
 function AdminFormModal({
@@ -148,6 +148,7 @@ function AdminFormModal({
     onChange,
     onClose,
     onSubmit,
+    roles
 }: AdminFormModalProps) {
     return (
         <AnimatePresence>
@@ -228,7 +229,7 @@ function AdminFormModal({
                                 onChange={(v) => onChange("password_confirmation", v)}
                                 placeholder="••••••••"
                             />
-                            <RoleSelect value={form.role} onChange={(v) => onChange("role", v)} />
+                            <RoleSelect value={form.role} onChange={(v) => onChange("role", v)} roles={roles} />
                         </div>
 
                         {/* Actions */}
@@ -349,22 +350,39 @@ function DeleteModal({
     );
 }
 
+
+// API dan qaytadigan pagination meta
+interface PaginationMeta {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number;
+    to: number;
+}
+
+
 // ---------- Main Page ----------
 export default function AdminsPage() {
     const [admins, setAdmins] = useState<Admin[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [roles, setRoles] = useState<{ id: number, name: string }[]>([]);
+
 
     const [createOpen, setCreateOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
+    const [meta, setMeta] = useState<PaginationMeta | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const [form, setForm] = useState<AdminFormData>(EMPTY_FORM);
     const [formLoading, setFormLoading] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
 
+    const [search, setSearch] = useState("");
 
 
     const [snack, setSnack] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({
@@ -377,17 +395,51 @@ export default function AdminsPage() {
         setLoading(true);
         try {
             const res = await api.get("/admin/admins");
-            setAdmins(res.data.admin ?? []);
-        } catch { 
+            setAdmins(res.data.data ?? []);
+            console.log(res)
+            setMeta({ 
+                current_page: res?.data?.current_page,
+                last_page: res?.data?.last_page,
+                per_page: res?.data?.per_page,
+                total: res?.data?.total,
+                from: res?.data?.from,
+                to: res?.data?.to,
+            });
+        } catch {
             toast.error("Adminlarni yuklashda xatolik");
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => { fetchAdmins(); }, []);
+    const fetchRoles = async () => {
+        setLoading(true);
+        try {
+            const res = await api.get("/admin/roles");
+            console.log(res)
+            setRoles(res.data.data ?? []);
+        } catch {
+            toast.error("Adminlarni yuklashda xatolik");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    
+    useEffect(() => {
+        fetchAdmins();
+        fetchRoles();
+    }, [currentPage ]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            // setCurrentPage(1);
+            // fetchAdmins(1, search);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [search]);
+
+
     const handleFormChange = (field: keyof AdminFormData, value: string) => {
         setForm((prev) => ({ ...prev, [field]: value }));
         setFormError(null);
@@ -400,7 +452,7 @@ export default function AdminsPage() {
         if (form.password !== form.password_confirmation) { setFormError("Parollar mos kelmadi"); return; }
         setFormLoading(true);
         try {
-            await api.post("/admin/admins", form); 
+            await api.post("/admin/admins", form);
             toast.success("Admin muvaffaqiyatli yaratildi");
             setCreateOpen(false);
             fetchAdmins();
@@ -423,7 +475,7 @@ export default function AdminsPage() {
         try {
             const payload: any = { name: form.name, email: form.email, role: form.role };
             if (form.password) { payload.password = form.password; payload.password_confirmation = form.password_confirmation; }
-            await api.put(`/admin/admins/${selectedAdmin!.id}`, payload); 
+            await api.put(`/admin/admins/${selectedAdmin!.id}`, payload);
             toast.success("Admin muvaffaqiyatli yangilandi");
             setEditOpen(false);
             fetchAdmins();
@@ -437,18 +489,25 @@ export default function AdminsPage() {
     const handleDelete = async () => {
         setFormLoading(true);
         try {
-            await api.delete(`/admin/admins/${selectedAdmin!.id}`); 
+            await api.delete(`/admin/admins/${selectedAdmin!.id}`);
             toast.success("Admin o'chirildi");
             setDeleteOpen(false);
             fetchAdmins();
-        } catch (err: any) { 
+        } catch (err: any) {
             toast.error(err?.response?.data?.message ?? "O'chirishda xatolik");
             setDeleteOpen(false);
         } finally { setFormLoading(false); }
     };
 
-    const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
-    const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => { setRowsPerPage(+e.target.value); setPage(0); };
+    const handleChangePage = (_: unknown, newPage: number) => {
+        setPage(newPage);
+        setCurrentPage(newPage + 1);
+        console.log(newPage + 1);
+    };
+    const handleChangeRowsPerPage = (event: ChangeEvent<HTMLInputElement>) => {
+        setRowsPerPage(+event.target.value);
+        setPage(0);
+    };
     const paginatedAdmins = admins.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
     return (
@@ -457,7 +516,7 @@ export default function AdminsPage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.4 }}
-                className="min-h-screen bg-[#f0f4f3] p-8 font-sans"
+                className="min-h-screen  overflow-y-auto scrollbar   scrollbar-thumb-gray-400   scrollbar-thin scrollbar-track-gray-100 bg-[#f0f4f3] p-8 font-sans"
             >
 
                 {/* Header */}
@@ -467,14 +526,44 @@ export default function AdminsPage() {
                             Foydalanuvchilar
                         </h1>
                     </div>
-                    <motion.button
-                        whileTap={{ scale: 0.97 }}
-                        onClick={openCreate}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors"
-                    >
-                        <AddIcon fontSize="small" />
-                        Foydalanuvchi yaratish
-                    </motion.button>
+                    <div className="flex items-center gap-2.5">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Haydovchi qidirish..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-96 pl-4 pr-10 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+
+                            {search ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSearch("");
+                                        // setCurrentPage(1);
+                                        // getDriverVerify(1, "");
+                                    }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                    <X size={24} />
+                                </button>
+                            ) : (
+                                <SlidersHorizontal
+                                    size={16}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                />
+                            )}
+                        </div>
+                        <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            onClick={openCreate}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors"
+                        >
+                            <AddIcon fontSize="small" />
+                            Foydalanuvchi yaratish
+                        </motion.button>
+                    </div>
                 </div>
 
                 {/* Table */}
@@ -535,8 +624,8 @@ export default function AdminsPage() {
                                                                 key={role.id}
                                                                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold ${statusConfig[role.name]?.classes ?? 'bg-amber-50 text-amber-800 ring-1 ring-amber-200'}`}
                                                             >
-                                                                {statusConfig[role.name]?.icon ?? 'bg-amber-50 text-amber-800 ring-1 ring-amber-200'}
-                                                                {statusConfig[role.name]?.label ?? 'bg-amber-50 text-amber-800 ring-1 ring-amber-200'}
+                                                                {statusConfig[role.name]?.icon ?? <CheckCircle2 size={11} className="text-teal-600" />}
+                                                                {statusConfig[role.name]?.label ?? role.name}
                                                             </span>
                                                         ))}
                                                     </TableCell>
@@ -597,6 +686,7 @@ export default function AdminsPage() {
                 onChange={handleFormChange}
                 onClose={() => setCreateOpen(false)}
                 onSubmit={handleCreate}
+                roles={roles}
             />
 
             {/* Edit Modal */}
@@ -611,6 +701,7 @@ export default function AdminsPage() {
                 onChange={handleFormChange}
                 onClose={() => setEditOpen(false)}
                 onSubmit={handleEdit}
+                roles={roles}
             />
 
             {/* Delete Modal */}

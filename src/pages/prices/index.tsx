@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-    SlidersHorizontal,
     RotateCcw,
 } from "lucide-react";
 import api from "../../api/api.ts";
@@ -20,7 +19,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { Button } from "@mui/material";
 import UpdatePriceModal from "../../components/UpdatePriceModal/index.tsx";
- 
+
 
 
 
@@ -64,13 +63,14 @@ const columns: readonly Column[] = [
 
 
 export default function PricesScreen() {
-     const [syncing, setSyncing] = useState(false); 
+    const [syncing, setSyncing] = useState(false);
     const [data, setData] = useState<any[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [price, setPrice] = useState(0);
+    const [currency, setCurrency] = useState<"UZS" | "USD" | "RUB" | "KZT">("UZS");
     const [cardNumber, setCardNumber] = useState("");
     const [selectedId, setSelectedId] = useState<number | null>(null);
-    const [fio , setFio] = useState("");
+    const [fio, setFio] = useState("");
 
 
     const { status: statusUrl } = useParams(); // Agar URL parametrlari kerak bo'lsa, shu yerda olish mumkin
@@ -89,20 +89,20 @@ export default function PricesScreen() {
             setData(responseData);
         } catch (error) {
             console.log(error);
-        }  
+        }
     };
 
     // Sahifa o'zgarganda qayta fetch qilish
     useEffect(() => {
         void getPrices();
-    }, [ statusUrl]);
+    }, [statusUrl]);
 
 
     const handleUpdate = async () => {
         if (selectedId === null) return; // Agar hech narsa tanlanmagan bo'lsa, hech narsa qilma
         try {
             await api.put(`/admin/service-pricings/${selectedId}`, {
-                price: price,
+                price: String(price) + ' ' + currency,
                 card_number: cardNumber,
                 card_holder_name: fio,
 
@@ -128,10 +128,10 @@ export default function PricesScreen() {
                         </p>
                     </div>
                     <div className="flex items-center gap-2.5">
-                        <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                        {/* <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
                             <SlidersHorizontal size={14} />
                             Filters
-                        </button>
+                        </button> */}
                         <motion.button
                             onClick={handleSync}
                             whileTap={{ scale: 0.97 }}
@@ -143,7 +143,7 @@ export default function PricesScreen() {
                             >
                                 <RotateCcw size={14} />
                             </motion.span>
-                            Sync Queue
+                            Ma'lumotlarni yangilash
                         </motion.button>
                     </div>
                 </div>
@@ -188,7 +188,8 @@ export default function PricesScreen() {
                                                                         <>
                                                                             <Button
                                                                                 onClick={() => {
-                                                                                    setPrice(row.price);
+                                                                                    setPrice(row.price.split(' ')[0]);
+                                                                                    setCurrency(row.price.split(' ')[1])
                                                                                     setCardNumber(row.card_number);
                                                                                     setIsOpen(true);
                                                                                     setSelectedId(row.id);
@@ -224,6 +225,8 @@ export default function PricesScreen() {
                 onConfirm={handleUpdate}
                 price={price}
                 setPrice={setPrice}
+                currency={currency}
+                setCurrency={setCurrency}
                 cardNumber={cardNumber}
                 fio={fio}
                 setFio={setFio}

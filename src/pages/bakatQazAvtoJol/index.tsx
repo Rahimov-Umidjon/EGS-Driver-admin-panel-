@@ -9,30 +9,15 @@ import api from "../../api/api.ts";
 import QueueTable from "../../components/queueTable";
 import ImageViewerModal from "../../components/ImageviewerModal";
 import { useParams } from "react-router-dom";
-import { BorderQueue, File } from "../../interface/index.ts";
+import { BorderQueue } from "../../interface/index.ts";
 
 
-type UzEPIStatistics = "uzepi_pending" | "uzepi_approved" | "uzepi_rejected" | "uzepi_payment_approved" | "uzepi_payment_uploaded"
-
-
-
-type SelectedImages = {
-    invoice: File[];
-    packing_list: File[];
-    export_declaration: File[];
-    tir: File[];
-    ct1: File[];
-    fito: File[];
-    obshiy_forma: File[];
-    forma_a: File[];
-    cmr: File[];
-    payment_check: File[];
-    passport?: File[];
-    driving_license?: File[];
-    tex_passport?: File[];
-};
-
-
+type QueueStatistics =
+    "bat_kaz_pending"
+    | "bat_kaz_approved"
+    | "bat_kaz_rejected"
+    | "bat_kaz_payment_approved"
+    | "bat_kaz_payment_uploaded"
 
 
 
@@ -49,67 +34,85 @@ interface PaginationMeta {
 }
 
 
-const statisticsConfig: Record<UzEPIStatistics, { label: string; subClass: string }> = {
-    uzepi_pending: { label: "Kutilmoqda", subClass: "text-blue-500" },
-    uzepi_approved: { label: "Tasdiqlandi", subClass: "text-emerald-500" },
-    uzepi_payment_uploaded: { label: "To‘lov yuklandi", subClass: "text-yellow-500" },
-    uzepi_payment_approved: { label: "Hujjat yuklanmagan", subClass: "text-orange-500" },
-    uzepi_rejected: { label: "Rad etildi", subClass: "text-red-500" },
+const statisticsConfig: Record<QueueStatistics, { label: string; subClass: string }> = {
+    bat_kaz_pending: { label: "Kutilmoqda", subClass: "text-blue-500" },
+    bat_kaz_approved: { label: "Tasdiqlandi", subClass: "text-emerald-500" },
+    bat_kaz_payment_uploaded: { label: "To‘lov yuklandi", subClass: "text-yellow-500" },
+    bat_kaz_payment_approved: { label: "Hujjat yuklanmagan", subClass: "text-orange-500" },
+    bat_kaz_rejected: { label: "Rad etildi", subClass: "text-red-500" },
 };
 
 const statsList = [
-    "uzepi_pending",
-    "uzepi_payment_approved",
-    "uzepi_payment_uploaded",
-    "uzepi_approved",
-    "uzepi_rejected",
+    "bat_kaz_pending",
+    "bat_kaz_payment_approved",
+    "bat_kaz_payment_uploaded",
+    "bat_kaz_approved",
+    "bat_kaz_rejected",
+
 ] as const;
 
 
-export default function UzEPI() {
+
+export interface ImageItem {
+    id: number;
+    queue_id: number;
+    path: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    type: string;
+}
+
+
+type SelectedImages = {
+    polis: ImageItem[];
+    cmr: ImageItem[];
+    payment_check: ImageItem[];
+    passport?: ImageItem[];
+    driving_license?: ImageItem[];
+    tex_passport?: ImageItem[];
+};
+
+
+export default function BakatQazAvtoJol() {
     const [currentPage, setCurrentPage] = useState(1);
     const [syncing, setSyncing] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [statistics, setStatistics] = useState<Record<UzEPIStatistics, number> | null>(null);
+    const [statistics, setStatistics] = useState<Record<QueueStatistics, number> | null>(null);
     const [data, setData] = useState<BorderQueue[]>([]);
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
-    const [selectedImages, setSelectedImages] = useState<SelectedImages | undefined>(undefined);
+    const [selectedImages, setSelectedImages] =
+        useState<SelectedImages | undefined>(undefined);
+    const { status } = useParams();
     const [search, setSearch] = useState("");
 
-    const { status: statusUrl } = useParams(); // Agar URL parametrlari kerak bo'lsa, shu yerda olish mumkin
-
+    console.log("STATUS:", status);
 
     const handleOpenDocs = (item: BorderQueue) => {
+
         setSelectedImages({
-            invoice: item.files.filter((obj) => obj.type === 'invoice'),
-            packing_list: item.files.filter((obj) => obj.type === 'packing_list'),
-            export_declaration: item.files.filter((obj) => obj.type === 'export_declaration'),
-            tir: item.files.filter((obj) => obj.type === 'tir'),
-            ct1: item.files.filter((obj) => obj.type === 'ct1'),
-            fito: item.files.filter((obj) => obj.type === 'fito'),
-            obshiy_forma: item.files.filter((obj) => obj.type === 'obshiy_forma'),
-            forma_a: item.files.filter((obj) => obj.type === 'forma_a'),
+            polis: item.files.filter((obj) => obj.type === 'polis'),
             cmr: item.files.filter((obj) => obj.type === 'cmr'),
             payment_check: item.files.filter((obj) => obj.type === 'payment_check'),
             passport: item.driver.document?.filter((obj) => obj.type === 'passport') ?? [],
             driving_license: item.driver.document?.filter((obj) => obj.type === 'driving_license') ?? [],
             tex_passport: item.driver.document?.filter((obj) => obj.type === 'tex_passport') ?? [],
         });
+
         setModalOpen(true);
     };
 
     const handleSync = () => {
         setSyncing(true);
-        void getUzepi(currentPage);
+        void getQueue(currentPage);
         setTimeout(() => setSyncing(false), 1800);
     };
 
-    const getUzepi = async (page: number , searchValue = search) => {
+    const getQueue = async (page: number, searchValue = search) => {
         try {
             setLoading(true);
-            // API ga page va per_page parametrlarini yuborish
-            const res = await api.get(`/admin/uzepi${statusUrl === 'pending' ? '' : statusUrl === 'success' ? '/approved-history' : '/rejected-history'}`, {
+            const res = await api.get(`/admin/bakat-kazavtajuli${status === 'pending' ? '' : status === 'success' ? '/approved-history' : '/rejected-history'}`, {
                 params: {
                     page,
                     // per_page: 10, // har sahifada nechta ko'rsatilsin
@@ -129,8 +132,6 @@ export default function UzEPI() {
                 from: res?.data?.from,
                 to: res?.data?.to,
             });
-
-
         } catch (error) {
             console.log(error);
         } finally {
@@ -138,33 +139,35 @@ export default function UzEPI() {
         }
     };
 
+
+
     const getStatistics = async () => {
+
         try {
-            const res = await api.get(`/admin/uzepi/statistics`);
+            const res = await api.get(`/admin/bakat-kazavtajuli/statistics`);
+
             setStatistics(res.data.data);
         } catch (error) {
             console.log(error);
         }
     };
 
-    // Sahifa o'zgarganda qayta fetch qilish
     useEffect(() => {
-        void getUzepi(currentPage);
-    }, [currentPage, statusUrl]);
+        void getQueue(currentPage);
+    }, [currentPage, status]);
 
     useEffect(() => {
         void getStatistics();
-    }, []);
+    }, [status]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             setCurrentPage(1);
-            getUzepi(1, search);
+            getQueue(1, search);
         }, 500);
 
         return () => clearTimeout(timer);
     }, [search]);
-
 
 
     return (
@@ -173,8 +176,9 @@ export default function UzEPI() {
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-7">
+
                     <h1 className="text-[22px] font-bold text-gray-900 leading-tight">
-                        O'zbekiston EPI
+                        Bakat QazAvtoJol
                     </h1>
 
                     <div className="flex items-center gap-2.5">
@@ -193,7 +197,7 @@ export default function UzEPI() {
                                     onClick={() => {
                                         setSearch("");
                                         setCurrentPage(1);
-                                        getUzepi(1, "");
+                                        getQueue(1, "");
                                     }}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
                                 >
@@ -224,7 +228,7 @@ export default function UzEPI() {
 
                 {/* Stat Cards */}
                 <div className="grid grid-cols-5 gap-3.5 mb-5">
-                    {statsList.map((stat: UzEPIStatistics, i) => (
+                    {statsList.map((stat: QueueStatistics, i) => (
                         <motion.div
                             key={statisticsConfig[stat].label}
                             initial={{ opacity: 0, y: 12 }}
@@ -247,14 +251,15 @@ export default function UzEPI() {
                 {/* Table Card */}
                 {meta && data && (
                     <QueueTable
-                        type={'uzepi'}
                         loading={loading}
                         data={data}
                         meta={meta}
                         currentPage={currentPage}
                         setCurrentPage={setCurrentPage}
                         handleOpenDocs={(item: BorderQueue) => handleOpenDocs(item)}
-                        refetch={() => getUzepi(currentPage)}
+                        refetch={() => getQueue(currentPage)}
+                        type={'bakat-kazavtajuli'}
+
                     />
                 )}
             </div>
@@ -263,8 +268,7 @@ export default function UzEPI() {
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
-                type={'uzepi'}
-                imgType={['invoice', 'cmr', 'packing_list', 'export_declaration', 'tir', 'ct1', 'fito', 'obshiy_forma', 'forma_a', 'payment_check', 'passport', 'tex_passport', 'driving_license']}
+                imgType={['polis', 'cmr', 'payment_check', 'passport', 'tex_passport', 'driving_license']}
             />
 
 

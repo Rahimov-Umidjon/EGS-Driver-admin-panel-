@@ -5,16 +5,25 @@ import { CreditCard, Save } from "lucide-react";
 interface UpdatePriceModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => void;
+    onConfirm: (data: {
+        price: number;
+        cardNumber: string;
+        fio: string;
+        currency: "UZS" | "USD" | "RUB" | "KZT";
+        // convertedPrice: number;
+    }) => void;
+
     price: number;
     setPrice: Dispatch<SetStateAction<number>>;
+    currency: "UZS" | "USD" | "RUB" | "KZT";
+    setCurrency: Dispatch<SetStateAction<"UZS" | "USD" | "RUB" | "KZT">>;
     cardNumber: string;
     setCardNumber: Dispatch<SetStateAction<string>>;
-    title?: string;
-    subtitle?: string;
     setFio: Dispatch<SetStateAction<string>>;
     fio: string;
 
+    title?: string;
+    subtitle?: string;
 }
 
 export default function UpdatePriceModal({
@@ -23,16 +32,27 @@ export default function UpdatePriceModal({
     onConfirm,
     price,
     setPrice,
+    currency,
+    setCurrency,
     cardNumber,
     setCardNumber,
+    setFio,
+    fio,
     title = "Narxni yangilash",
     subtitle = "Xizmat narxini o'zgartirish",
-    setFio,
-    fio
 }: UpdatePriceModalProps) {
 
+
+  
+ 
+
     const handleConfirm = () => {
-        onConfirm();
+        onConfirm({
+            price,
+            cardNumber,
+            fio,
+            currency, 
+        });
         onClose();
     };
 
@@ -80,6 +100,23 @@ export default function UpdatePriceModal({
                             className="w-full rounded-xl border border-gray-200 text-[13px] px-3 py-2.5 outline-none focus:border-blue-300 bg-gray-50"
                         />
 
+                        {/* Currency */}
+                        <label className="text-[12.5px] text-gray-500 block mt-3 mb-1.5">
+                            Valyuta
+                        </label>
+                        <select
+                            value={currency}
+                            onChange={(e) => setCurrency(e.target.value as "UZS" | "USD" | "RUB" | "KZT")}
+                            className="w-full rounded-xl border border-gray-200 text-[13px] px-3 py-2.5 outline-none focus:border-blue-300 bg-gray-50"
+                        >
+                            <option value="UZS">UZS</option>
+                            <option value="USD">USD</option>
+                            <option value="RUB">RUB</option>
+                            <option value="KZT">KZT</option>
+                        </select>
+
+
+
                         {/* Card Number */}
                         <label className="text-[12.5px] text-gray-500 block mt-3 mb-1.5">
                             Karta raqami
@@ -92,9 +129,9 @@ export default function UpdatePriceModal({
                             className="w-full rounded-xl border border-gray-200 text-[13px] px-3 py-2.5 outline-none focus:border-blue-300 bg-gray-50"
                         />
 
-                        {/* Card Number */}
+                        {/* FIO */}
                         <label className="text-[12.5px] text-gray-500 block mt-3 mb-1.5">
-                            Fio
+                            FIO
                         </label>
                         <input
                             type="text"

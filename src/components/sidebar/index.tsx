@@ -1,4 +1,4 @@
-import { File, IdCard, MapPinned, Truck, X, MessageSquareText, FilePen, ClipboardList, CheckCircle2, XCircle, ChevronDown, ChevronRight, SlidersHorizontal, ShieldUser, UserRoundCog, UserRoundPen } from "lucide-react";
+import {   IdCard, MapPinned, Truck, X, MessageSquareText, FilePen, ClipboardList, CheckCircle2, XCircle, ChevronDown, ChevronRight, SlidersHorizontal, ShieldUser, UserRoundCog, UserRoundPen } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -27,7 +27,7 @@ interface ResponseData {
 }
 
 const sidebarItems: SidebarItem[] = [
-    { id: "map", icon: MapPinned, label: "Xarita", path: "/new-map" },
+    { id: "map", icon: MapPinned, label: "Xarita", path: "/new-map" , permission: ["driver.view"], },
     {
         id: "admins",
         icon: UserRoundCog,
@@ -58,14 +58,7 @@ const sidebarItems: SidebarItem[] = [
         path: "/chats",
         permission: ["chat.view", "chat.send", "chat.read"],
     },
-    {
-        id: "passport",
-        icon: IdCard,
-        label: "Passportlar",
-        path: "/passports",
-        permission: ["driver-verify.view", "driver-verify.approve", "driver-verify.reject"],
-
-    },
+     
     {
         id: "passports",
         icon: IdCard,
@@ -111,7 +104,7 @@ const sidebarItems: SidebarItem[] = [
     },
     // { id: "prices", icon: SlidersHorizontal, label: "Narxlar", path: "/prices" },
 
-    { id: "verificationRusQueue", icon: FilePen, label: "Russiya navbat", path: "/rus-queue/pending", permission: ["russia-queue.view", "russia-queue.update", "russia-queue.approve", "russia-queue.reject"] },
+    { id: "verificationRusQueue", icon: FilePen, label: "Rossiya navbat", path: "/rus-queue/pending", permission: ["russia-queue.view", "russia-queue.update", "russia-queue.approve", "russia-queue.reject"] },
     {
         id: "rusQueueHistory",
         icon: ClipboardList,
@@ -137,16 +130,30 @@ const sidebarItems: SidebarItem[] = [
         ],
     },
 
-    { id: "Guarantees", icon: FilePen, label: "Guarantees", path: "/guarantees/pending", permission: ["guarantee.view", "guarantee.update", "guarantee.approve", "guarantee.reject"], },
+    { id: "Guarantees", icon: FilePen, label: "To'lab berish", path: "/guarantees/pending", permission: ["guarantee.view", "guarantee.update", "guarantee.approve", "guarantee.reject"], },
     {
         id: "guaranteesHistory",
         icon: ClipboardList,
-        label: "Guarantees tarixi",
+        label: "To'lab berish tarixi",
         path: "/guarantees",
         permission: ["guarantee.view", "guarantee.update", "guarantee.approve", "guarantee.reject"],
         children: [
             { id: "guaranteesSuccess", icon: CheckCircle2, label: "Muvaffaqiyatli", path: "/guarantees/success" },
             { id: "guaranteesFailed", icon: XCircle, label: "Muvaffaqiyatsiz", path: "/guarantees/failed" },
+        ],
+    },
+
+
+    { id: "BakatQazAvtoJol", icon: FilePen, label: "Bakat QazAvtoJol", path: "/bakat-qaz-avto-jol/pending", permission: ["bakat-kazavajuli.view", "bakat-kazavajuli.approve", "bakat-kazavajuli.reject"], },
+    {
+        id: "bakatQazAvtoJolHistory",
+        icon: ClipboardList,
+        label: "Bakat QazAvtoJol tarixi",
+        path: "/bakat-qaz-avto-jol",
+        permission: ["bakat-kazavajuli.view", "bakat-kazavajuli.approve", "bakat-kazavajuli.reject"],
+        children: [
+            { id: "bakatQazAvtoJolSuccess", icon: CheckCircle2, label: "Muvaffaqiyatli", path: "/bakat-qaz-avto-jol/success" },
+            { id: "bakatQazAvtoJolFailed", icon: XCircle, label: "Muvaffaqiyatsiz", path: "/bakat-qaz-avto-jol/failed" },
         ],
     },
 
@@ -220,6 +227,8 @@ export default function Sidebar() {
     const { logout, loading, token, user } = useAuth();
     const [open, setOpen] = useState(false);
 
+    console.log(user)
+
     const handleLogout = async () => {
         await logout();
         setOpen(false);
@@ -242,6 +251,8 @@ export default function Sidebar() {
     const visibleItems = sidebarItems.filter(item => hasPermission(item.permission));
 
     useEffect(() => {
+
+        console.log(user)
         if (user) {
             const pusher = new Pusher(`${import.meta.env.VITE_PUSHER_APP_KEY}`, {
                 cluster: `${import.meta.env.VITE_PUSHER_APP_CLUSTER}`,
@@ -253,7 +264,7 @@ export default function Sidebar() {
                 }
             });
 
-            const channel = pusher.subscribe(`private-admin.${user?.id}`);
+            const channel = pusher.subscribe(`private-admin.${user?.admin?.id}`);
             channel.bind('admin.notification', (data: ResponseData) => {
                 console.log('private-admin', data);
                 setUnreadCount(data);
@@ -396,7 +407,7 @@ export default function Sidebar() {
 
             {/* Logout Dialog */}
             <Dialog.Root open={open} onOpenChange={setOpen}>
-                 
+
 
                 <AnimatePresence>
                     {open && (

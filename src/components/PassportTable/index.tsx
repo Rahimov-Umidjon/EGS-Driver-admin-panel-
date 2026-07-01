@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, RefreshCw, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { ChangeEvent, Dispatch, ReactNode, SetStateAction, useState } from "react";
-
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -13,14 +12,13 @@ import TableRow from '@mui/material/TableRow';
 import FolderIcon from '@mui/icons-material/Folder';
 import { Button } from "@mui/material";
 import api from "../../api/api.ts";
-import RejectModal from "../RejectModal";
 import { toast } from "react-toastify";
 import EmailIcon from '@mui/icons-material/Email';
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import ConfirmModal from "../confirmModal/index.tsx";
-import { BorderQueue } from "../../interface/index.ts";
+import { Driver } from "../../interface/index.ts";
 import FileUploadModal from "../fileUploadModal/index.tsx";
+import { PassportConfirmModal } from "../PassportConfirmModal/index.tsx";
 
 
 
@@ -73,32 +71,32 @@ const columns: readonly Column[] = [
 ];
 
 
-
-
-
-
 const statusConfig: Record<Status, { label: string; classes: string; icon: ReactNode }> = {
     pending: {
-        label: "Pending",
+        label: "Kutilmoqda",
         classes: "bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200",
         icon: <Clock size={11} className="text-yellow-500" />,
     },
     inprogress: {
-        label: "In Progress",
+        label: "Jarayonda",
         classes: "bg-fuchsia-50 text-fuchsia-800 ring-1 ring-fuchsia-200",
         icon: <XCircle size={11} className="text-fuchsia-600" />,
     },
     completed: {
-        label: "Completed",
+        label: "Yakunlandi",
         classes: "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200",
         icon: <CheckCircle2 size={11} className="text-emerald-500" />,
     },
     rejected: {
-        label: "Rejected",
+        label: "Rad etildi",
         classes: "bg-red-50 text-red-800 ring-1 ring-red-200",
         icon: <XCircle size={11} className="text-red-500" />,
     },
-
+    incomplete: {
+        label: "Jarayonda",
+        classes: "bg-fuchsia-50 text-fuchsia-800 ring-1 ring-fuchsia-200",
+        icon: <XCircle size={11} className="text-fuchsia-600" />,
+    },
 };
 
 type Status =
@@ -106,17 +104,15 @@ type Status =
     | 'completed'
     | 'inprogress'
     | 'rejected'
-
-
-
+    | 'incomplete'
 
 interface PassportTableProps {
     loading: boolean;
-    data: BorderQueue[];
+    data: Driver[];
     meta: PaginationMeta;
     setCurrentPage: Dispatch<SetStateAction<number>>;
     currentPage: number;
-    handleOpenDocs: (item: BorderQueue) => void;
+    handleOpenDocs: (item: Driver) => void;
     refetch: () => void;
     type: 'queue' | 'payment' | 'kazepi' | 'uzepi' | 'passport';
 }
@@ -128,72 +124,101 @@ function PassportTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: 
 
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-    const [rejectModal, setRejectModal] = useState<{
-        open: boolean;
-        type: "queue" | "payment" | "kazepi" | "uzepi" | "passport" | null;
-    }>({ open: false, type: null });
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
-    const [comment, setComment] = useState<string>("");
     const navigate = useNavigate();
 
+    /* ---------- Modal state ---------- */
     const [confirmModal, setConfirmModal] = useState<{
         open: boolean;
-        title: string;
-        description: string;
-        confirmColor: "success" | "error";
-        confirmLabel: string;
-        onConfirm: () => void;
-    }>({
-        open: false,
-        title: "",
-        description: "",
-        confirmColor: "success",
-        confirmLabel: "Tasdiqlash",
-        onConfirm: () => { },
-    });
+        driverId?: number;
+        type: "approve" | "reject" | "warning" | null;
+        fio?: string;
+        number?: string;
 
-    const openConfirm = (config: Omit<typeof confirmModal, "open">) => {
-        setConfirmModal({ open: true, ...config });
+    }>({ open: false, type: null });
+
+    const openConfirmModal = (driverId: number, type: "approve" | "reject" | "warning", fio?: string, number?: string) => {
+        setConfirmModal({ open: true, driverId, type, fio, number });
     };
 
-    const closeConfirm = () => {
-        setConfirmModal(prev => ({ ...prev, open: false }));
-    };
+    const closeConfirmModal = () => setConfirmModal({ open: false, type: null });
 
+    /* ---------- Approve ---------- */
+    const handleApprove = async (driverId: number, fio: string, number: string) => {
 
-
-
-
-    const handleConfirmReject = async (id: number) => {
-        const endpoint = `/admin/drivers/${id}/cancelled-documents`
+        const payload: { fio: string; number: string } | null = fio && number ? { fio, number } : null;
         try {
-            await api.post(endpoint);
-            toast.success("Hujattlar bekor qilindi");
-            refetch()
-        } catch (error: unknown) {
-            if (axios.isAxiosError(error)) {
-                toast.error(error?.response?.data?.message || "Ma'lumotlarni olishda xatolik");
+            const res = await api.post(`/admin/drivers/${driverId}/approve-documents`,
+                payload ?? {}
+            );
+            if (res?.status === 200) {
+                toast.success("Hujjatlar tasdiqlandi!");
+                refetch()
             } else {
-                toast.error("Ma'lumotlarni olishda xatolik");
+                toast.error(res?.data?.message || "Tasdiqlashda xatolik");
             }
+        } catch (err: unknown) {
+            console.error(err);
+
+            if (axios.isAxiosError(err)) {
+                toast.error(err.response?.data?.message || "Server bilan bog'lanishda xatolik yuz berdi");
+            } else {
+                toast.error("Noma'lum xatolik yuz berdi");
+            }
+        } finally {
+            closeConfirmModal();
         }
     };
 
-    const handleConfirm = async (id: number) => {
-        const endpoint = `/admin/drivers/${id}/approve-documents`
+    /* ---------- Reject ---------- */
+    const handleReject = async (driverId: number) => {
         try {
-            await api.post(endpoint);
-            toast.success("Hujattlar tasdiqlandi");
-            refetch()
-        } catch (error: unknown) {
-            if (axios.isAxiosError(error)) {
-                toast.error(error?.response?.data?.message || "Ma'lumotlarni olishda xatolik");
+            const res = await api.post(`/admin/drivers/${driverId}/cancelled-documents`);
+
+            if (res?.status === 200) {
+                toast.info("Hujjatlar rad etildi!");
+                refetch()
             } else {
-                toast.error("Ma'lumotlarni olishda xatolik");
+                toast.error(res?.data.message || "Rad etishda xatolik");
             }
+        } catch (err: unknown) {
+            console.error(err);
+
+            if (axios.isAxiosError(err)) {
+                toast.error(err.response?.data?.message || "Server bilan bog'lanishda xatolik yuz berdi");
+            } else {
+                toast.error("Noma'lum xatolik yuz berdi");
+            }
+        } finally {
+            closeConfirmModal();
         }
     };
+
+    /* ---------- InComplate ---------- */
+    const handleInComplate = async (driverId: number) => {
+        try {
+            const res = await api.post(`/admin/drivers/${driverId}/incomplete`);
+
+            if (res?.status === 200) {
+                toast.info("Tex pasportni qayta yuklashga ruxsat berildi!");
+                refetch()
+            } else {
+                toast.error(res?.data.message || "Rad etishda xatolik");
+            }
+        } catch (err: unknown) {
+            console.error(err);
+            if (axios.isAxiosError(err)) {
+                toast.error(err.response?.data?.message || "Server bilan bog'lanishda xatolik yuz berdi");
+            } else {
+                toast.error("Noma'lum xatolik yuz berdi");
+            }
+        } finally {
+            closeConfirmModal();
+        }
+    };
+
+
 
 
     const handleChangePage = (_: unknown, newPage: number) => {
@@ -206,79 +231,6 @@ function PassportTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: 
         setRowsPerPage(+event.target.value);
         setPage(0);
     };
-
-
-
-
-
-    const handleConfirmPolis = async (id: number) => {
-        try {
-            const res = await api.post(`/admin/${type}/${id}/waiting-payment`)
-            console.log(res)
-            toast.success("File tasdiqlandi");
-            refetch()
-
-        } catch (e: unknown) {
-            if (axios.isAxiosError(e)) {
-                toast.error(e?.response?.data.message || "Ma'lumotlarni olishda xatolik");
-            } else {
-                toast.error("Ma'lumotlarni olishda xatolik");
-            }
-        }
-    }
-    const handleRejectedPolis = async (id: number) => {
-        try {
-            const res = await api.post(`/admin/${type}/${id}/cancelled`)
-            console.log(res)
-            toast.success("File tasdiqlanmadi");
-            refetch()
-
-        } catch (e: unknown) {
-            if (axios.isAxiosError(e)) {
-                toast.error(e?.response?.data.message || "Ma'lumotlarni olishda xatolik");
-            } else {
-                toast.error("Ma'lumotlarni olishda xatolik");
-            }
-        }
-    }
-
-    const handleConfirmPayment = async (id: number) => {
-        try {
-            const res = await api.post(`/admin/${type}/${id}/approve-payment`)
-            console.log(res)
-            toast.success("Check tasdiqlandi");
-            refetch()
-
-        } catch (e: unknown) {
-            if (axios.isAxiosError(e)) {
-                toast.error(e?.response?.data.message || "Ma'lumotlarni olishda xatolik");
-            } else {
-                toast.error("Ma'lumotlarni olishda xatolik");
-            }
-        }
-    }
-    const handleRejectedPayment = async (id: number) => {
-        try {
-            const res = await api.post(`/admin/${type}/${id}/reject-payment`)
-            console.log(res)
-            toast.success("Check tasdiqlanmadi");
-            refetch()
-
-        } catch (e: unknown) {
-            if (axios.isAxiosError(e)) {
-                toast.error(e?.response?.data.message || "Ma'lumotlarni olishda xatolik");
-            } else {
-                toast.error("Ma'lumotlarni olishda xatolik");
-            }
-        }
-    }
-
-
-
-
-
-
-
 
 
     return (
@@ -328,38 +280,10 @@ function PassportTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: 
                                                 <Button onClick={() => handleOpenDocs(item)} variant={'outlined'} color={'info'} sx={{ borderRadius: 8 }}
                                                     className={'py-1 px-2 border w-max rounded-[20px] cursor-pointer'}>
                                                     <FolderIcon color={'info'} />
-                                                    <p className={'ml-2'}>{item?.documents.filter((obj) => obj.type !== 'payment_check')?.length}</p>
+                                                    <p className={'ml-2'}>{item?.documents?.filter((obj) => obj.type !== 'payment_check')?.length}</p>
                                                 </Button>
 
-                                                {/* pending_review uchun */}
-                                                {item.status === 'pending_review' && (
-                                                    <div className="flex flex-col gap-y-2">
-                                                        <Button
-                                                            variant="contained" color="success" size="small"
-                                                            onClick={() => openConfirm({
-                                                                title: "Hujjatni tasdiqlash",
-                                                                description: "Haqiqatdan ham ushbu hujjatni tasdiqlaysizmi?",
-                                                                confirmColor: "success",
-                                                                confirmLabel: "Tasdiqlash",
-                                                                onConfirm: () => { handleConfirmPolis(item.id); closeConfirm(); },
-                                                            })}
-                                                        >
-                                                            Confirm
-                                                        </Button>
-                                                        <Button
-                                                            variant="contained" color="error" size="small"
-                                                            onClick={() => openConfirm({
-                                                                title: "Hujjatni bekor qilish",
-                                                                description: "Haqiqatdan ham ushbu hujjatni bekor qilasizmi?",
-                                                                confirmColor: "error",
-                                                                confirmLabel: "Bekor qilish",
-                                                                onConfirm: () => { handleRejectedPolis(item.id); closeConfirm(); },
-                                                            })}
-                                                        >
-                                                            Cancel
-                                                        </Button>
-                                                    </div>
-                                                )}
+
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -373,49 +297,52 @@ function PassportTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: 
                                             </p>
                                         </TableCell>
                                         <TableCell>
-
                                             <span
                                                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold ${cfg?.classes}`}>
                                                 {cfg?.icon}
                                                 {cfg?.label}
                                             </span>
-
-
-
                                         </TableCell>
-
                                         <TableCell>
-
-
                                             <div className={'flex gap-x-2 items-center'}>
 
                                                 <Button
-                                                    onClick={() => {
-                                                        handleConfirm(item?.id)
-                                                    }}
+                                                    onClick={() => openConfirmModal(item.id, "approve", item.fio, item.number)}
                                                     // fullWidth={true}
 
                                                     variant={'contained'}
                                                     color={'success'}
                                                     size={'small'}
                                                 >
-                                                    Confirm
+                                                    Tasdiqlash
                                                 </Button>
 
                                                 <Button
-                                                    onClick={() => {
-                                                        handleConfirmReject(item?.id)
-                                                    }}
+                                                    className={"whitespace-nowrap"}
+
+                                                    onClick={() => openConfirmModal(item.id, "reject", item.fio, item.number)}
                                                     // fullWidth={true}
                                                     variant={'contained'}
                                                     color={'error'}
                                                     size={'small'}
                                                 >
-                                                    Cancel
+                                                    Bekor qilish
                                                 </Button>
 
 
-                                                <Button onClick={() => navigate(`/chats/${item?.driver?.id}`)} variant={'outlined'} color={'info'} sx={{ borderRadius: 8 }}
+                                                <Button
+                                                    className={"whitespace-nowrap"}
+                                                    onClick={() => openConfirmModal(item.id, "warning", item.fio, item.number)}
+                                                    // fullWidth={true}
+                                                    variant={'contained'}
+                                                    color={'warning'}
+                                                    size={'small'}
+                                                >
+                                                    Qayta yuklash
+                                                </Button>
+
+
+                                                <Button onClick={() => navigate(`/chats/${item?.id}`)} variant={'outlined'} color={'info'} sx={{ borderRadius: 8 }}
                                                     className={'py-1 px-2 border w-max rounded-[20px] cursor-pointer'}>
                                                     <EmailIcon color={'info'} />
                                                 </Button>
@@ -440,31 +367,34 @@ function PassportTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: 
             </Paper>
 
 
-
-
-            <RejectModal
-                comment={comment}
-                setComment={setComment}
-                isOpen={rejectModal.open}
-                onClose={() => setRejectModal({ open: false, type: null })}
-                onConfirm={() => handleConfirmReject(comment, selectedId as number)}
-                title={rejectModal.type === "kazepi" ? "KazEpini bekor qilish" : "Navbatni bekor qilish"}
-                subtitle={
-                    rejectModal.type === "kazepi"
-                        ? "Ushbu kazepi bekor qilinadi"
-                        : "Ushbu navbat bekor qilinadi"
-                }
-            />
-
-            <ConfirmModal
+            {/* Confirm Modal */}
+            <PassportConfirmModal
                 open={confirmModal.open}
-                title={confirmModal.title}
-                description={confirmModal.description}
-                confirmColor={confirmModal.confirmColor}
-                confirmLabel={confirmModal.confirmLabel}
-                onClose={closeConfirm}
-                onConfirm={confirmModal.onConfirm}
+                title={
+                    confirmModal.type === "approve"
+                        ? "Hujjatlarni tasdiqlash"
+                        : confirmModal.type === "reject" ? "Hujjatlarni rad etish" : "Tex pasportni qayta yuklash"
+                }
+                message={
+                    confirmModal.type === "approve"
+                        ? "Ushbu haydovchi hujjatlari tasdiqlansinmi?"
+                        : confirmModal.type === "reject" ? "Ushbu haydovchi hujjatlari rad etilsinmi?" : "Ushbu haydovchi Tex pasportni qayta yuklashga ruxsat berasizmi?"
+                }
+                confirmColor={confirmModal.type === "approve" ? "green" : confirmModal.type === "reject" ? "red" : "yellow"}
+                onConfirm={() => {
+                    if (confirmModal.type === "approve" && confirmModal.driverId) {
+                        handleApprove(confirmModal.driverId, confirmModal.fio || "", confirmModal.number || "");
+                    } else if (confirmModal.type === "reject" && confirmModal.driverId) {
+                        handleReject(confirmModal.driverId);
+                    } else if (confirmModal.type === "warning" && confirmModal.driverId) {
+                        handleInComplate(confirmModal.driverId);
+                    }
+                }}
+                confirmModal={confirmModal}
+                setConfirmModal={setConfirmModal}
+                onCancel={closeConfirmModal}
             />
+
 
             <FileUploadModal type={type} refetch={refetch} setSelectedId={setSelectedId} selectedId={selectedId} isOpen={isOpen} setIsOpen={setIsOpen} />
 

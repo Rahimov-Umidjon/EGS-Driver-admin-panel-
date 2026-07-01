@@ -1,9 +1,9 @@
 import {motion, AnimatePresence} from "framer-motion";
 import {CheckCircle2, CreditCard, Maximize2, XCircle} from "lucide-react";
 import api from "../../api/api.ts";
-import {Dispatch, SetStateAction, useEffect, useState} from "react";
-import {BorderQueue} from "../../pages/queues/verificationID.tsx";
+import {Dispatch, SetStateAction, useEffect, useState} from "react"; 
 import {toast} from "react-toastify";
+import { BorderQueue } from "../../interface/index.ts";
 
 interface File {
     id: number;
