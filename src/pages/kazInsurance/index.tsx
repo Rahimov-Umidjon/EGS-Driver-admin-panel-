@@ -243,6 +243,7 @@ export default function KazInsurance() {
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
                 imgType={['polis', 'cmr', 'payment_check', 'passport', 'tex_passport', 'driving_license']}
+                serviceId={1}
             />
 
 

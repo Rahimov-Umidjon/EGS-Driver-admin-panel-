@@ -86,7 +86,7 @@ export default function VerificationQueue() {
         useState<SelectedImages | undefined>(undefined);
     const { status } = useParams();
     const [search, setSearch] = useState("");
-
+    const [serviceId, setServiceId] = useState<number | null>(null)
     console.log("STATUS:", status);
 
     const handleOpenDocs = (item: BorderQueue) => {
@@ -101,6 +101,7 @@ export default function VerificationQueue() {
         });
 
         setModalOpen(true);
+        setServiceId(item?.id || null)
     };
 
     const handleSync = () => {
@@ -271,6 +272,8 @@ export default function VerificationQueue() {
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
                 imgType={['polis', 'cmr', 'payment_check', 'passport', 'tex_passport', 'driving_license']}
+                serviceId={serviceId}
+                type={'queue'}
             />
 
 

@@ -25,6 +25,7 @@ type SelectedImages = {
     obshiy_forma: File[];
     forma_a: File[];
     cmr: File[];
+    other: File[];
     payment_check: File[];
     passport?: File[];
     driving_license?: File[];
@@ -74,7 +75,7 @@ export default function Guarantee() {
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedImages, setSelectedImages] = useState<SelectedImages | undefined>(undefined);
-
+    const [serviceId, setServiceId] = useState<number | null>(null)
     const { status: statusUrl } = useParams(); // Agar URL parametrlari kerak bo'lsa, shu yerda olish mumkin
     const [search, setSearch] = useState("");
 
@@ -88,6 +89,7 @@ export default function Guarantee() {
             export_declaration: item.files.filter((obj) => obj.type === 'export_declaration'),   // your API field
 
             ct1: item.files.filter((obj) => obj.type === 'ct1'),   // your API field
+            other: item.files.filter((obj) => obj.type === 'other'),   // your API field
             fito: item.files.filter((obj) => obj.type === 'fito'),   // your API field
             obshiy_forma: item.files.filter((obj) => obj.type === 'obshiy_forma'),   // your API field
             forma_a: item.files.filter((obj) => obj.type === 'forma_a'),   // your API field
@@ -95,6 +97,7 @@ export default function Guarantee() {
             payment_check: item.files.filter((obj) => obj.type === 'payment_check'),    // your API field
         });
         setModalOpen(true);
+        setServiceId(item?.id || null)
     };
 
     const handleSync = () => {
@@ -103,7 +106,7 @@ export default function Guarantee() {
         setTimeout(() => setSyncing(false), 1800);
     };
 
-    const getGuarantees = async (page: number , searchValue = search) => {
+    const getGuarantees = async (page: number, searchValue = search) => {
         try {
             setLoading(true);
             // API ga page va per_page parametrlarini yuborish
@@ -261,7 +264,8 @@ export default function Guarantee() {
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
                 type={'guarantee'}
-                imgType={['invoice', 'cmr', 'packing_list', 'export_declaration', 'ct1', 'fito', 'obshiy_forma', 'forma_a', 'payment_check', 'passport', 'tex_passport', 'driving_license']}
+                imgType={['invoice', 'cmr', 'packing_list', 'export_declaration', 'ct1', 'fito', 'obshiy_forma', 'forma_a', 'payment_check', 'passport', 'tex_passport', 'driving_license', 'other']}
+                serviceId={serviceId}
             />
 
 

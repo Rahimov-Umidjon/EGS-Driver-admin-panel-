@@ -352,14 +352,14 @@ function DeleteModal({
 
 
 // API dan qaytadigan pagination meta
-interface PaginationMeta {
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    from: number;
-    to: number;
-}
+// interface PaginationMeta {
+//     current_page: number;
+//     last_page: number;
+//     per_page: number;
+//     total: number;
+//     from: number;
+//     to: number;
+// }
 
 
 // ---------- Main Page ----------
@@ -375,7 +375,7 @@ export default function AdminsPage() {
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
-    const [meta, setMeta] = useState<PaginationMeta | null>(null);
+    // const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
 
     const [form, setForm] = useState<AdminFormData>(EMPTY_FORM);
@@ -397,14 +397,14 @@ export default function AdminsPage() {
             const res = await api.get("/admin/admins");
             setAdmins(res.data.data ?? []);
             console.log(res)
-            setMeta({ 
-                current_page: res?.data?.current_page,
-                last_page: res?.data?.last_page,
-                per_page: res?.data?.per_page,
-                total: res?.data?.total,
-                from: res?.data?.from,
-                to: res?.data?.to,
-            });
+            // setMeta({ 
+            //     current_page: res?.data?.current_page,
+            //     last_page: res?.data?.last_page,
+            //     per_page: res?.data?.per_page,
+            //     total: res?.data?.total,
+            //     from: res?.data?.from,
+            //     to: res?.data?.to,
+            // });
         } catch {
             toast.error("Adminlarni yuklashda xatolik");
         } finally {

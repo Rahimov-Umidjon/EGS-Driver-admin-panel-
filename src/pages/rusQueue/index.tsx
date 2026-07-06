@@ -88,7 +88,7 @@ export default function RusQueue() {
         useState<SelectedImages | undefined>(undefined);
     const { status } = useParams(); // Agar URL parametrlari kerak bo'lsa, shu yerda olish mumkin
     const [search, setSearch] = useState("");
-
+    const [serviceId, setServiceId] = useState<number | null>(null)
     console.log("STATUS:", status);
 
     const handleOpenDocs = (item: BorderQueue) => {
@@ -108,6 +108,7 @@ export default function RusQueue() {
         //     chek: item.files.filter((obj) => obj.type === 'payment_check'),    // your API field
         // });
         setModalOpen(true);
+        setServiceId(item?.id || null)
     };
 
     const handleSync = () => {
@@ -116,7 +117,7 @@ export default function RusQueue() {
         setTimeout(() => setSyncing(false), 1800);
     };
 
-    const getQueue = async (page: number , searchValue = search) => {
+    const getQueue = async (page: number, searchValue = search) => {
         try {
             setLoading(true);
             // API ga page va per_page parametrlarini yuborish
@@ -272,6 +273,8 @@ export default function RusQueue() {
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
                 imgType={['payment_check', 'passport', 'tex_passport', 'driving_license']}
+                serviceId={serviceId}
+                type={'russia_queue'}
             />
 
 

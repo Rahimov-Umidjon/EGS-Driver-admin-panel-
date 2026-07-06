@@ -36,7 +36,7 @@ interface PaginationMeta {
 
 
 interface Column {
-    id: 'id' | 'driver' | 'documents' | 'status' | 'border_name' | 'date' | 'cmr' | 'action' | 'duration' | 'insurance_type' | 'country' | 'bakat_kazavtajuli_type' | 'authorize_payment' | 'external_id' | 'time';
+    id: 'id' | 'driver' | 'documents' | 'status' | 'border_name' | 'date' | 'cmr' | 'action' | 'duration' | 'insurance_type' | 'country' | 'bakat_kazavtajuli_type' | 'authorize_payment' | 'external_id' | 'time' | 'price';
     label: string;
     minWidth?: number;
     align?: 'left';
@@ -147,7 +147,7 @@ interface QueueTableProps {
     loading: boolean;
     data: BorderQueue[];
     meta: PaginationMeta;
-    setCurrentPage: Dispatch<SetStateAction<number>>;
+    setCurrentPage: Dispatch<SetStateAction<number>>; 
     currentPage: number;
     handleOpenDocs: (item: BorderQueue) => void;
     refetch: () => void;
@@ -157,7 +157,7 @@ interface QueueTableProps {
 
 
 
-function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: QueueTableProps) {
+function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage  }: QueueTableProps) {
 
 
 
@@ -338,7 +338,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                 render: (row: BorderQueue) => (
                     <div className={'flex items-center gap-2 min-w-[150px] '}>
                         <TextField
-                            
+
                             variant="standard"
                             label="Tashqi ID"
                             value={row?.driver?.external_id}
@@ -1218,11 +1218,9 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                 minWidth: 170,
                 render: (row: BorderQueue) => (
                     <span className="text-[13px] font-medium text-gray-800">
-                        {row.duration || '—'} oy
+                        {row.duration || '—'}
                     </span>
                 )
-
-
             },
 
             {
@@ -1234,10 +1232,7 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                         {row.insurance_type === 'unlimited' ? 'Cheklanmagan' : 'Cheklangan'}
                     </span>
                 )
-
-
             },
-
 
             {
                 id: "action",
@@ -1578,6 +1573,22 @@ function QueueTable({ type, data, handleOpenDocs, refetch, setCurrentPage }: Que
                         >
                             {cfg?.icon}
                             {cfg?.label}
+                        </span>
+                    );
+                },
+            },
+
+            {
+                id: "price",
+                label: "To'lov qiymati",
+                minWidth: 180,
+                render: (row: BorderQueue) => { 
+
+                    return (
+                        <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold `}
+                        >
+                            {row?.price ? `${row?.price}` : 'N/A'}
                         </span>
                     );
                 },

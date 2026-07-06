@@ -13,7 +13,7 @@ import {
     Receipt,
     File,
 } from "lucide-react";
-import { downloadKazepiFile } from "../../api/downloadFile";
+import { downloadImages, downloadKazepiFile } from "../../api/downloadFile";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -26,6 +26,7 @@ type CategoryKey =
     | "export_declaration"
     | "tir"
     | "ct1"
+    | "other"
     | "fito"
     | "obshiy_forma"
     | "forma_a"
@@ -70,12 +71,14 @@ interface ImageViewerModalProps {
         obshiy_forma?: ImageItem[];
         forma_a?: ImageItem[];
         payment_check?: ImageItem[];
+        other?: ImageItem[];
         passport?: ImageItem[];
         driving_license?: ImageItem[];
         tex_passport?: ImageItem[];
     };
     imgType?: string[];
-    type?: "kazepi" | "queue" | "uzepi" | "passport" | "guarantee";
+    type?: "kazepi" | "queue" | "uzepi" | "passport" | "guarantee" | "insurance" | "bakatkazavtojuli" | "russia_queue" | "driver_document";
+    serviceId: number | null
 }
 
 const BASE_URL = "https://mobile-test.izisol.uz/storage/";
@@ -180,6 +183,14 @@ const getCategoryConfig = (images: ImageViewerModalProps["images"]): CategoryDat
         images: images?.insurance_certificate ?? [],
     },
     {
+        key: "other",
+        label: "Qo'shimcha ma'lumot",
+        icon: <FileText size={14} />,
+        color: "from-teal-600 to-teal-800",
+        accent: "#14b8a6",
+        images: images?.other ?? [],
+    },
+    {
         key: "tex_passport",
         label: "Tex Passport",
         icon: <FileText size={14} />,
@@ -212,7 +223,7 @@ interface LightboxProps {
     startIndex: number;
     onClose: () => void;
     accentColor: string;
-    type?: "kazepi" | "queue" | "uzepi" | "passport" | "guarantee";
+    type?: "kazepi" | "queue" | "uzepi" | "passport" | "guarantee" | "insurance" | "bakatkazavtojuli" | "russia_queue" | "driver_document";
 }
 
 function Lightbox({ images, startIndex, onClose, accentColor, type }: LightboxProps) {
@@ -382,17 +393,12 @@ function Lightbox({ images, startIndex, onClose, accentColor, type }: LightboxPr
 
                     {/* Download */}
                     <button
-                        onClick={() =>
-                            downloadKazepiFile(
+                        onClick={() => {
+                            if (type) downloadKazepiFile(
                                 images[current].id,
-                                type === "kazepi"
-                                    ? "kazepi"
-                                    : type === "uzepi"
-                                    ? "uzepi"
-                                    : type === "passport"
-                                    ? "passport"
-                                    : "queue"
+                                type
                             )
+                        }
                         }
                         className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
                         title="Yuklab olish"
@@ -532,6 +538,7 @@ export default function ImageViewerModal({
     images,
     imgType,
     type,
+    serviceId
 }: ImageViewerModalProps) {
     const [activeTab, setActiveTab] = useState<CategoryKey>("polis");
     const [lightbox, setLightbox] = useState<{
@@ -606,7 +613,12 @@ export default function ImageViewerModal({
                                     </div>
                                     <div className="flex items-center">
                                         <button
-                                            onClick={onClose}
+                                            onClick={() => {
+                                                if (type && serviceId) downloadImages(
+                                                    serviceId,
+                                                    type
+                                                )
+                                            }}
                                             className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
                                         >
                                             <Download size={18} color="#fff" />
@@ -621,7 +633,7 @@ export default function ImageViewerModal({
                                 </div>
 
                                 {/* Tabs */}
-                                <div className="flex gap-1 px-6 pt-4">
+                                <div className="flex gap-1 px-6 pt-4  overflow-y-auto scrollbar scrollbar-thumb-gray-400 scrollbar-thin scrollbar-track-gray-100">
                                     {categories.map((cat) => (
                                         <button
                                             key={cat.key}
@@ -769,8 +781,8 @@ export default function ImageViewerModal({
                                                                     img.status === "approved"
                                                                         ? "linear-gradient(to top, rgba(3, 77, 22, 0.8), transparent)"
                                                                         : img.status === "pending"
-                                                                        ? "linear-gradient(to top, rgba(108, 91, 4, 0.8), transparent)"
-                                                                        : "linear-gradient(to top, rgba(108, 4, 4, 0.8), transparent)",
+                                                                            ? "linear-gradient(to top, rgba(108, 91, 4, 0.8), transparent)"
+                                                                            : "linear-gradient(to top, rgba(108, 4, 4, 0.8), transparent)",
                                                             }}
                                                         >
                                                             <div className="flex items-start justify-between">
@@ -787,12 +799,12 @@ export default function ImageViewerModal({
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                downloadKazepiFile(
-                                                                    img.id,
-                                                                    type === "kazepi"
-                                                                        ? "kazepi"
-                                                                        : "queue"
-                                                                );
+                                                                if (type) {
+                                                                    downloadKazepiFile(
+                                                                        img.id,
+                                                                        type
+                                                                    );
+                                                                }
                                                             }}
                                                             className="absolute top-2 right-2 p-4 rounded-lg opacity-0 group-hover:opacity-100 transition-all z-[4000]"
                                                             style={{

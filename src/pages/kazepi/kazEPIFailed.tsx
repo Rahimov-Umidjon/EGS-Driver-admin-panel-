@@ -26,6 +26,7 @@ type SelectedImages = {
     obshiy_forma: File[];
     forma_a: File[];
     cmr: File[];
+    other: File[];
     payment_check: File[];
     passport?: File[];
     driving_license?: File[];
@@ -78,9 +79,11 @@ export default function KazEPI() {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedImages, setSelectedImages] = useState<SelectedImages | undefined>(undefined);
     const [search, setSearch] = useState("");
+    const [serviceId , setServiceId] = useState<number | null>(null)
 
     const { status: statusUrl } = useParams(); // Agar URL parametrlari kerak bo'lsa, shu yerda olish mumkin
 
+    console.log(serviceId)
 
 
 
@@ -95,12 +98,14 @@ export default function KazEPI() {
             obshiy_forma: item.files.filter((obj) => obj.type === 'obshiy_forma'),   // your API field
             forma_a: item.files.filter((obj) => obj.type === 'forma_a'),   // your API field
             cmr: item.files.filter((obj) => obj.type === 'cmr'),     // your API field
+            other: item.files.filter((obj) => obj.type === 'other'),     // your API field
             payment_check: item.files.filter((obj) => obj.type === 'payment_check'),    // your API field
             passport: item.driver.document?.filter((obj) => obj.type === 'passport') ?? [],
             driving_license: item.driver.document?.filter((obj) => obj.type === 'driving_license') ?? [],
             tex_passport: item.driver.document?.filter((obj) => obj.type === 'tex_passport') ?? [],
         });
         setModalOpen(true);
+        setServiceId(item?.id || null)
     };
 
     const handleSync = () => {
@@ -258,7 +263,7 @@ export default function KazEPI() {
                         currentPage={currentPage}
                         setCurrentPage={setCurrentPage}
                         handleOpenDocs={(item: BorderQueue) => handleOpenDocs(item)}
-                        refetch={() => getKazepi(currentPage)}
+                        refetch={() => getKazepi(currentPage)} 
                     />
                 )}
             </div>
@@ -268,7 +273,8 @@ export default function KazEPI() {
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
                 type={'kazepi'}
-                imgType={['invoice', 'cmr', 'packing_list', 'export_declaration', 'tir', 'ct1', 'fito', 'obshiy_forma', 'forma_a', 'payment_check', 'passport', 'tex_passport', 'driving_license']}
+                imgType={['invoice', 'cmr', 'packing_list', 'export_declaration', 'tir', 'ct1', 'fito', 'obshiy_forma', 'forma_a', 'payment_check', 'passport', 'tex_passport', 'driving_license' , 'other']}
+                serviceId={serviceId}
             />
 
 

@@ -84,20 +84,21 @@ export default function RusKazInsurance() {
         useState<SelectedImages | undefined>(undefined);
     const { status } = useParams(); // Agar URL parametrlari kerak bo'lsa, shu yerda olish mumkin
     const [search, setSearch] = useState("");
-
+    const [serviceId, setServiceId] = useState<number | null>(null)
     console.log("STATUS:", selectedImages);
 
     const handleOpenDocs = (item: BorderQueue) => {
 
         setSelectedImages({
-            payment_check: item.files.filter((obj) => obj.type === 'payment_check'),     
-            insurance_certificate: item.files.filter((obj) => obj.type === 'insurance_certificate'),     
+            payment_check: item.files.filter((obj) => obj.type === 'payment_check'),
+            insurance_certificate: item.files.filter((obj) => obj.type === 'insurance_certificate'),
             passport: item.driver.document?.filter((obj) => obj.type === 'passport') ?? [],
             driving_license: item.driver.document?.filter((obj) => obj.type === 'driving_license') ?? [],
             tex_passport: item.driver.document?.filter((obj) => obj.type === 'tex_passport') ?? [],
         });
- 
+
         setModalOpen(true);
+        setServiceId(item?.id || null)
     };
 
     const handleSync = () => {
@@ -265,7 +266,9 @@ export default function RusKazInsurance() {
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
-                imgType={['payment_check' , 'insurance_certificate', 'passport', 'tex_passport', 'driving_license']}
+                type={'insurance'}
+                imgType={['payment_check', 'insurance_certificate', 'passport', 'tex_passport', 'driving_license']}
+                serviceId={serviceId}
             />
 
 

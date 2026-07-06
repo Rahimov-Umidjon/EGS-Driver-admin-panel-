@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
     SlidersHorizontal,
     RotateCcw,
-    X, 
+    X,
 } from "lucide-react";
 import api from "../../api/api.ts";
 import ImageViewerModal from "../../components/ImageviewerModal";
@@ -81,7 +81,7 @@ export default function Passport() {
     const [selectedImages, setSelectedImages] =
         useState<SelectedImages | undefined>(undefined);
     const { status } = useParams(); // Agar URL parametrlari kerak bo'lsa, shu yerda olish mumkin
-
+    const [serviceId, setServiceId] = useState<number | null>(null)
     const [search, setSearch] = useState("");
 
     console.log("STATUS:", selectedImages);
@@ -95,6 +95,7 @@ export default function Passport() {
         });
 
         setModalOpen(true);
+        setServiceId(item?.id || null)
     };
 
     const handleSync = () => {
@@ -265,6 +266,8 @@ export default function Passport() {
                 onClose={() => setModalOpen(false)}
                 images={selectedImages}
                 imgType={['tex_passport', 'driving_license', 'passport']}
+                type="driver_document"
+                serviceId={serviceId}
             />
 
 
